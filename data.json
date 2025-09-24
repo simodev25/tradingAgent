@@ -1,0 +1,429 @@
+{
+  "symbol": "EURUSD",
+  "period": "5d",
+  "interval": "15m",
+  "account": {
+    "platform": "mt5",
+    "type": "ACCOUNT_TRADE_MODE_DEMO",
+    "broker": "OANDA TMS Brokers S.A.",
+    "currency": "EUR",
+    "currencyDigits": 2,
+    "server": "OANDATMS-MT5",
+    "balance": 50007.77,
+    "equity": 50011.36,
+    "margin": 93.26,
+    "freeMargin": 49918.1,
+    "leverage": 100,
+    "marginLevel": 53625.73450568303,
+    "tradeAllowed": true,
+    "investorMode": false,
+    "marginMode": "ACCOUNT_MARGIN_MODE_RETAIL_HEDGING",
+    "name": "EU/M62970093/EUR",
+    "login": 62970093,
+    "credit": 0
+  },
+  "positions": [],
+  "orders": [],
+  "symbol_spec": {
+    "symbol": "EURUSD",
+    "tickSize": 1e-05,
+    "minVolume": 0.01,
+    "maxVolume": 50,
+    "volumeStep": 0.01,
+    "fillingModes": [
+      "SYMBOL_FILLING_FOK"
+    ],
+    "executionMode": "SYMBOL_TRADE_EXECUTION_MARKET",
+    "contractSize": 100000,
+    "initialMargin": 0,
+    "maintenanceMargin": 0,
+    "priceCalculationMode": "SYMBOL_CALC_MODE_FOREX",
+    "marginCurrency": "EUR",
+    "profitCurrency": "USD",
+    "baseCurrency": "EUR",
+    "swapMode": "SYMBOL_SWAP_MODE_DISABLED",
+    "swapRates": [
+      0,
+      1,
+      1,
+      3,
+      1,
+      1,
+      0
+    ],
+    "allowedExpirationModes": [
+      "SYMBOL_EXPIRATION_GTC",
+      "SYMBOL_EXPIRATION_DAY",
+      "SYMBOL_EXPIRATION_SPECIFIED",
+      "SYMBOL_EXPIRATION_SPECIFIED_DAY"
+    ],
+    "allowedOrderTypes": [
+      "SYMBOL_ORDER_MARKET",
+      "SYMBOL_ORDER_LIMIT",
+      "SYMBOL_ORDER_STOP",
+      "SYMBOL_ORDER_SL",
+      "SYMBOL_ORDER_TP",
+      "SYMBOL_ORDER_CLOSEBY"
+    ],
+    "orderGTCMode": "SYMBOL_ORDERS_GTC",
+    "digits": 5,
+    "path": "Forex\\EURUSD",
+    "point": 1e-05,
+    "description": "EUR/USD",
+    "tradeMode": "SYMBOL_TRADE_MODE_DISABLED",
+    "stopsLevel": 0,
+    "freezeLevel": 0,
+    "quoteSessions": {
+      "SUNDAY": [
+        {
+          "from": "23:05:00.000",
+          "to": "23:59:59.999"
+        }
+      ],
+      "MONDAY": [
+        {
+          "from": "00:00:00.000",
+          "to": "22:58:59.999"
+        },
+        {
+          "from": "23:05:00.000",
+          "to": "23:59:59.999"
+        }
+      ],
+      "TUESDAY": [
+        {
+          "from": "00:00:00.000",
+          "to": "22:58:59.999"
+        },
+        {
+          "from": "23:05:00.000",
+          "to": "23:59:59.999"
+        }
+      ],
+      "WEDNESDAY": [
+        {
+          "from": "00:00:00.000",
+          "to": "22:58:59.999"
+        },
+        {
+          "from": "23:05:00.000",
+          "to": "23:59:59.999"
+        }
+      ],
+      "THURSDAY": [
+        {
+          "from": "00:00:00.000",
+          "to": "22:58:59.999"
+        },
+        {
+          "from": "23:05:00.000",
+          "to": "23:59:59.999"
+        }
+      ],
+      "FRIDAY": [
+        {
+          "from": "00:00:00.000",
+          "to": "22:58:59.999"
+        }
+      ],
+      "SATURDAY": []
+    },
+    "tradeSessions": {
+      "SUNDAY": [
+        {
+          "from": "23:05:00.000",
+          "to": "23:59:59.999"
+        }
+      ],
+      "MONDAY": [
+        {
+          "from": "00:00:00.000",
+          "to": "22:58:59.999"
+        },
+        {
+          "from": "23:05:00.000",
+          "to": "23:59:59.999"
+        }
+      ],
+      "TUESDAY": [
+        {
+          "from": "00:00:00.000",
+          "to": "22:58:59.999"
+        },
+        {
+          "from": "23:05:00.000",
+          "to": "23:59:59.999"
+        }
+      ],
+      "WEDNESDAY": [
+        {
+          "from": "00:00:00.000",
+          "to": "22:58:59.999"
+        },
+        {
+          "from": "23:05:00.000",
+          "to": "23:59:59.999"
+        }
+      ],
+      "THURSDAY": [
+        {
+          "from": "00:00:00.000",
+          "to": "22:58:59.999"
+        },
+        {
+          "from": "23:05:00.000",
+          "to": "23:59:59.999"
+        }
+      ],
+      "FRIDAY": [
+        {
+          "from": "00:00:00.000",
+          "to": "22:58:59.999"
+        }
+      ],
+      "SATURDAY": []
+    },
+    "optionStrike": 0,
+    "expirationTime": null,
+    "pipSize": 0.0001
+  },
+  "price": {
+    "accountCurrencyExchangeRate": 1.16998,
+    "symbol": "EURUSD",
+    "bid": 1.15799,
+    "ask": 1.16999,
+    "time": "2025-09-02T19:52:40.613Z",
+    "brokerTime": "2025-09-02 21:52:40.613",
+    "profitTickValue": 0.8591139099133154,
+    "lossTickValue": 0.8591139099133154,
+    "timestamps": {
+      "eventGenerated": "2025-09-02T19:52:40.613Z",
+      "serverProcessingStarted": "2025-09-02T19:52:59.095Z"
+    },
+    "equity": 50011.35
+  },
+  "history": [
+    {
+      "Datetime": "2025-08-27T19:00:00.000Z",
+      "Open": 1.16307,
+      "High": 1.16325,
+      "Low": 1.16292,
+      "Close": 1.16307,
+      "Volume": 536
+    },
+    {
+      "Datetime": "2025-08-27T19:15:00.000Z",
+      "Open": 1.16306,
+      "High": 1.16328,
+      "Low": 1.163,
+      "Close": 1.16328,
+      "Volume": 430
+    },
+    {
+      "Datetime": "2025-08-27T19:30:00.000Z",
+      "Open": 1.16328,
+      "High": 1.16345,
+      "Low": 1.16299,
+      "Close": 1.16328,
+      "Volume": 443
+    },
+    {
+      "Datetime": "2025-08-27T19:45:00.000Z",
+      "Open": 1.16327,
+      "High": 1.16353,
+      "Low": 1.16309,
+      "Close": 1.16339,
+      "Volume": 450
+    },
+    {
+      "Datetime": "2025-08-27T20:00:00.000Z",
+      "Open": 1.1634,
+      "High": 1.16358,
+      "Low": 1.16318,
+      "Close": 1.1633,
+      "Volume": 302
+    },
+    {
+      "Datetime": "2025-08-27T20:15:00.000Z",
+      "Open": 1.1633,
+      "High": 1.16353,
+      "Low": 1.16316,
+      "Close": 1.16352,
+      "Volume": 343
+    },
+    {
+      "Datetime": "2025-08-27T20:30:00.000Z",
+      "Open": 1.16353,
+      "High": 1.16366,
+      "Low": 1.16346,
+      "Close": 1.16355,
+      "Volume": 319
+    },
+    {
+      "Datetime": "2025-08-27T20:45:00.000Z",
+      "Open": 1.16354,
+      "High": 1.16385,
+      "Low": 1.16348,
+      "Close": 1.16377,
+      "Volume": 501
+    },
+    {
+      "Datetime": "2025-08-27T21:00:00.000Z",
+      "Open": 1.16364,
+      "High": 1.16386,
+      "Low": 1.16364,
+      "Close": 1.1638,
+      "Volume": 46
+    },
+    {
+      "Datetime": "2025-08-27T21:15:00.000Z",
+      "Open": 1.1638,
+      "High": 1.16381,
+      "Low": 1.16369,
+      "Close": 1.16379,
+      "Volume": 53
+    },
+    {
+      "Datetime": "2025-08-27T21:30:00.000Z",
+      "Open": 1.16379,
+      "High": 1.16389,
+      "Low": 1.16371,
+      "Close": 1.16383,
+      "Volume": 127
+    },
+    {
+      "Datetime": "2025-08-27T21:45:00.000Z",
+      "Open": 1.16383,
+      "High": 1.1639,
+      "Low": 1.16366,
+      "Close": 1.16368,
+      "Volume": 133
+    },
+    {
+      "Datetime": "2025-08-27T22:00:00.000Z",
+      "Open": 1.16395,
+      "High": 1.16406,
+      "Low": 1.16377,
+      "Close": 1.16388,
+      "Volume": 255
+    },
+    {
+      "Datetime": "2025-08-27T22:15:00.000Z",
+      "Open": 1.16388,
+      "High": 1.16406,
+      "Low": 1.16388,
+      "Close": 1.16405,
+      "Volume": 219
+    },
+    {
+      "Datetime": "2025-08-27T22:30:00.000Z",
+      "Open": 1.16406,
+      "High": 1.16441,
+      "Low": 1.16403,
+      "Close": 1.16427,
+      "Volume": 247
+    },
+    {
+      "Datetime": "2025-08-27T22:45:00.000Z",
+      "Open": 1.16428,
+      "High": 1.16437,
+      "Low": 1.16406,
+      "Close": 1.16434,
+      "Volume": 222
+    },
+    {
+      "Datetime": "2025-08-27T23:00:00.000Z",
+      "Open": 1.16435,
+      "High": 1.16444,
+      "Low": 1.16426,
+      "Close": 1.16436,
+      "Volume": 281
+    },
+    {
+      "Datetime": "2025-08-27T23:15:00.000Z",
+      "Open": 1.16436,
+      "High": 1.16448,
+      "Low": 1.16427,
+      "Close": 1.16441,
+      "Volume": 244
+    },
+    {
+      "Datetime": "2025-08-27T23:30:00.000Z",
+      "Open": 1.16442,
+      "High": 1.16476,
+      "Low": 1.16438,
+      "Close": 1.16476,
+      "Volume": 320
+    },
+    {
+      "Datetime": "2025-08-27T23:45:00.000Z",
+      "Open": 1.16476,
+      "High": 1.1648,
+      "Low": 1.16458,
+      "Close": 1.16477,
+      "Volume": 312
+    }
+  ],
+  "news": [
+    {
+      "title": "US Dollar Rises Early Tuesday, Focus on August Employment Report",
+      "publisher": "MT Newswires",
+      "link": "https://finance.yahoo.com/news/us-dollar-rises-early-tuesday-120237316.html",
+      "timestamp": "2025-09-02T12:02:37Z"
+    },
+    {
+      "title": "SocGen's Overnight Economic News Summary",
+      "publisher": "MT Newswires",
+      "link": "https://finance.yahoo.com/news/socgen-apos-overnight-economic-news-110058980.html",
+      "timestamp": "2025-09-02T11:00:58Z"
+    },
+    {
+      "title": "ECB on Track to Leave Rates on Hold Amidst French Political Uncertainty, Says Mitsubishi UFG; Comments on Euro",
+      "publisher": "MT Newswires",
+      "link": "https://finance.yahoo.com/news/ecb-track-leave-rates-hold-104010161.html",
+      "timestamp": "2025-09-02T10:40:10Z"
+    },
+    {
+      "title": "ING Comments on Euro, Poland's Zloty, Hungary's Forint, Czech Republic's Koruna",
+      "publisher": "MT Newswires",
+      "link": "https://finance.yahoo.com/news/ing-comments-euro-poland-apos-102945754.html",
+      "timestamp": "2025-09-02T10:29:45Z"
+    },
+    {
+      "title": "US Dollar Rises Early Friday Ahead of Personal Income, Spending, Advance Trade",
+      "publisher": "MT Newswires",
+      "link": "https://finance.yahoo.com/news/us-dollar-rises-early-friday-114248516.html",
+      "timestamp": "2025-08-29T11:42:48Z"
+    },
+    {
+      "title": "ING Comments on Euro, Poland's Zloty, Czech Republic's Koruna",
+      "publisher": "MT Newswires",
+      "link": "https://finance.yahoo.com/news/ing-comments-euro-poland-apos-103546301.html",
+      "timestamp": "2025-08-29T10:35:46Z"
+    },
+    {
+      "title": "US Dollar Falls Early Thursday Ahead of Jobless Claims, Gross Domestic Product, Pending Home Sales Data",
+      "publisher": "MT Newswires",
+      "link": "https://finance.yahoo.com/news/us-dollar-falls-early-thursday-115412951.html",
+      "timestamp": "2025-08-28T11:54:12Z"
+    },
+    {
+      "title": "French Political Crisis Escalates, Impact on Euro, Bonds, Notes Mitsubishi UFG",
+      "publisher": "MT Newswires",
+      "link": "https://finance.yahoo.com/news/french-political-crisis-escalates-impact-105709286.html",
+      "timestamp": "2025-08-28T10:57:09Z"
+    },
+    {
+      "title": "ING Comments on Euro, Swiss Franc",
+      "publisher": "MT Newswires",
+      "link": "https://finance.yahoo.com/news/ing-comments-euro-swiss-franc-095325357.html",
+      "timestamp": "2025-08-28T09:53:25Z"
+    },
+    {
+      "title": "ING Isn't Changing Its Euro Call as A Result of The French Political Storm",
+      "publisher": "MT Newswires",
+      "link": "https://finance.yahoo.com/news/ing-isn-apos-t-changing-162839859.html",
+      "timestamp": "2025-08-27T16:28:39Z"
+    }
+  ]
+}
