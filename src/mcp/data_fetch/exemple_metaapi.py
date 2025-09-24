@@ -496,15 +496,10 @@ if __name__ == "__main__":
     except Exception as e:
         print("price error:", e)
 
-    print("\n=== Current 15m Candles BTCUSD (WS-only endpoint) ===")
-    try:
-        print(get_current_candles("BTCUSD", tf_key="15m", limit=5))
-    except Exception as e:
-        print("current_candles error:", e)
 
     print("\n=== Historical 15m Candles BTCUSD (last 7 days) ===")
     try:
-        df = get_historical_candles("BTCUSD", tf_key="15m", days=7, limit=100)
+        df = get_historical_candles("BTCUSD", tf_key="15m", days=1, limit=100)
         if isinstance(df, dict) and "error" in df:
             print("API error:", df)
         else:

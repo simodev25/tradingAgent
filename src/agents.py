@@ -17,7 +17,7 @@ from asyncio import TimeoutError
 from contextlib import suppress
 from dotenv import load_dotenv
 from loguru import logger
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional, Callable
 from datetime import datetime
 
 # --- pour détecter GraphRecursionError si dispo ---
@@ -32,9 +32,11 @@ load_dotenv()
 # Setup OpenAI (ChatOpenAI) — timeouts propres
 # -------------------------
 from langchain_ollama import ChatOllama
+import importlib.util
+from functools import lru_cache
 
 ollama_base_url = os.getenv("OLLAMA_BASE_URL", "https://ollama.com")
-ollama_model = os.getenv("OLLAMA_MODEL", "gpt-oss:120b")
+ollama_model = os.getenv("OLLAMA_MODEL", "gpt-oss:120b-cloud")
 ollama_api_key = os.getenv("OLLAMA_API_KEY")
 
 # Important: on passe le header au client httpx via client_kwargs
@@ -89,6 +91,26 @@ def _normalize_params(params: Dict[str, Any]) -> Dict[str, Any]:
     if normalized["horizon"] not in ["intraday", "scalping", "swing", "long_term"]:
         raise ValueError("horizon doit être 'intraday', 'scalping', 'swing' ou 'long_term'")
     return normalized
+
+
+ANALYSIS_AGENT_TIMEOUT = int(os.getenv("ANALYSIS_AGENT_TIMEOUT", "120"))
+ENABLE_ANALYSIS_DIRECT_FALLBACK = _to_bool(os.getenv("ENABLE_ANALYSIS_DIRECT_FALLBACK", "true"))
+DIRECT_ANALYSIS_FIRST = _to_bool(os.getenv("DIRECT_ANALYSIS_FIRST", "false"))
+AUTO_EXECUTE_PLAN = _to_bool(os.getenv("AUTO_EXECUTE_PLAN", "true"))
+
+import importlib.util as _imp_util
+def _load_exec_core():
+    path = os.path.join(os.path.dirname(__file__), "mcp", "execution", "execution_core.py")
+    spec = _imp_util.spec_from_file_location("execution_core_direct", path)
+    if not spec or not spec.loader:
+        return None
+    mod = _imp_util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+        return mod
+    except Exception as e:
+        logger.error(f"[AUTO_EXECUTE] load error: {e}")
+        return None
 
 
 # -------------------------
@@ -191,30 +213,104 @@ def _extract_json_block(text: str) -> str:
     return candidate.strip()
 
 
-def _validate_levels(entry, sl, tp) -> bool:
+@lru_cache(maxsize=1)
+def _load_intraday_tool() -> Optional[Callable[..., str]]:
+    module_path = os.path.join(os.path.dirname(__file__), "mcp", "analyse", "analyze_tec_mcp.py")
+    if not os.path.isfile(module_path):
+        logger.error(f"[direct_intraday] module not found at {module_path}")
+        return None
+    spec = importlib.util.spec_from_file_location("analyze_tec_mcp_direct", module_path)
+    if spec is None or spec.loader is None:
+        logger.error("[direct_intraday] failed to create spec for analyze_tec_mcp")
+        return None
+    module = importlib.util.module_from_spec(spec)
+    module_dir = os.path.dirname(module_path)
+    added_path = False
+    if module_dir not in sys.path:
+        sys.path.insert(0, module_dir)
+        added_path = True
     try:
-        entry, sl, tp = float(entry), float(sl), float(tp)
-        if not (entry > 0 and sl > 0 and tp > 0):
-            return False
-        return (sl < entry < tp) or (tp < entry < sl)
-    except Exception:
-        return False
+        spec.loader.exec_module(module)  # type: ignore[attr-defined]
+    except Exception as exc:
+        logger.error(f"[direct_intraday] import error: {exc}")
+        if added_path and module_dir in sys.path:
+            try:
+                sys.path.remove(module_dir)
+            except ValueError:
+                pass
+        return None
+    tool = getattr(module, "intraday_decision", None)
+    if not callable(tool):
+        logger.error("[direct_intraday] intraday_decision not found in module")
+        if added_path and module_dir in sys.path:
+            try:
+                sys.path.remove(module_dir)
+            except ValueError:
+                pass
+        return None
+    return tool
 
 
-def _should_send_order(context: dict, min_confidence: int, honor_hold: bool) -> Tuple[bool, str]:
-    tec = (context or {}).get("technical_decision", {})
-    dec = tec.get("decision", {}) if isinstance(tec, dict) else {}
-    action = str(dec.get("action", "HOLD")).upper()
-    conf = int(dec.get("confidence", 0) or 0)
+def _direct_intraday_analysis(symbol: str, interval: str, horizon: str, risk_level: str) -> Optional[dict]:
+    try:
+        tool = _load_intraday_tool()
+        if tool is None:
+            return None
+        callable_tool = getattr(tool, "__wrapped__", tool)
+        # 1st attempt with requested interval
+        raw = callable_tool(symbol=symbol, interval=interval, risk_level=risk_level)
+        payload = json.loads(raw)
+        if not isinstance(payload, dict) or not payload.get("ok"):
+            logger.error(f"[direct_intraday] tool returned error: {payload}")
+            return None
+        data = payload.get("data") or {}
+        decision_raw = data.get("decision") or {}
+        decision = {
+            "action": decision_raw.get("action", "HOLD"),
+            "entry": decision_raw.get("entry"),
+            "sl": decision_raw.get("sl"),
+            "tp": decision_raw.get("tp"),
+            "confidence": decision_raw.get("confidence", 0),
+            "risk_level": decision_raw.get("risk_level", risk_level),
+        }
+        # If HOLD on 15m, try 5m as a second chance to increase entries
+        if decision["action"].upper() == "HOLD" and interval.lower() == "15m":
+            try:
+                raw2 = callable_tool(symbol=symbol, interval="5m", risk_level=risk_level)
+                payload2 = json.loads(raw2)
+                if isinstance(payload2, dict) and payload2.get("ok"):
+                    data2 = payload2.get("data") or {}
+                    decision2 = (data2.get("decision") or {})
+                    if str(decision2.get("action", "HOLD")).upper() != "HOLD":
+                        decision = {
+                            "action": decision2.get("action"),
+                            "entry": decision2.get("entry"),
+                            "sl": decision2.get("sl"),
+                            "tp": decision2.get("tp"),
+                            "confidence": decision2.get("confidence", 0),
+                            "risk_level": decision2.get("risk_level", risk_level),
+                        }
+                        data = data2
+            except Exception as _:
+                pass
+        result = {
+            "ok": True,
+            "symbol": symbol,
+            "horizon": horizon,
+            "decision": decision,
+            "reason": f"{data.get('reason', 'Direct intraday fallback')}",
+            "regime": data.get("regime"),
+            "volatility": data.get("volatility"),
+            "source": "direct_intraday",
+        }
+        for extra_key in ("levels", "position", "management"):
+            if extra_key in data:
+                result[extra_key] = data[extra_key]
+        return result
+    except Exception as exc:
+        logger.error(f"[direct_intraday] failed: {exc}")
+        return None
 
-    if honor_hold and action == "HOLD":
-        return False, "Honor HOLD"
-    if conf < min_confidence:
-        return False, f"Confidence {conf}% < min {min_confidence}%"
-    entry, sl, tp = dec.get("entry"), dec.get("sl"), dec.get("tp")
-    if not _validate_levels(entry, sl, tp):
-        return False, f"Invalid levels (entry={entry}, sl={sl}, tp={tp})"
-    return True, "OK"
 
 
 # -------------------------
@@ -251,7 +347,7 @@ async def run_news_mcp(symbol: str) -> dict:
                 )
 
                 raw = extract_last_message(resp)
-                logger.info(f"🚀 run_news_mcp {raw}")
+
 
                 # Safeguard: réponse non JSON => fallback sans lever d'exception
                 if isinstance(raw, str):
@@ -392,12 +488,24 @@ async def run_analysis_tec_mcp(
                     )
                 )
                 try:
-                    resp = await asyncio.wait_for(task, timeout=180)
+                    resp = await asyncio.wait_for(task, timeout=ANALYSIS_AGENT_TIMEOUT)
                 except TimeoutError:
-                    logger.error("⏱️ Timeout analysis agent (60s)")
+                    logger.error(f"⏱️ Timeout analysis agent ({ANALYSIS_AGENT_TIMEOUT}s)")
                     task.cancel()
                     with suppress(asyncio.CancelledError):
                         await task
+                    direct = None
+                    if ENABLE_ANALYSIS_DIRECT_FALLBACK:
+                        direct = await asyncio.to_thread(
+                            _direct_intraday_analysis,
+                            symbol,
+                            interval,
+                            horizon,
+                            risk_level,
+                        )
+                    if direct:
+                        logger.warning("[analysis] direct intraday fallback used after LLM timeout")
+                        return direct
                     return _fallback("analysis agent timeout", {"error": "timeout"})
                 except GraphRecursionError as e:
                     logger.error(f"GraphRecursionError (analysis): {e}")
@@ -417,7 +525,6 @@ async def run_analysis_tec_mcp(
                     raise
 
                 raw = extract_last_message(resp)
-                logger.info(f"🚀 run_analysis_tec_mcp {raw}")
 
                 # ➜ Si la réponse n’est pas du JSON (ex. “need more steps”), on fallback sans lever d’exception
                 if isinstance(raw, str):
@@ -514,6 +621,13 @@ async def run_execution_mcp(
 
                 # 2) Construire le prompt (style run_analysis_tec_mcp)
                 context_str = json.dumps(context or {}, ensure_ascii=False)
+                # Hedge/expo controls sourced from environment (strings expected by prompt)
+                hedge_mode = os.getenv("HEDGE_MODE", "false").strip().lower()
+                hedge_max_pairs = os.getenv("HEDGE_MAX_PAIRS", "2").strip()
+                hedge_max_net_usd_mult = os.getenv("HEDGE_MAX_NET_USD_MULT", "2.0").strip()
+                hedge_risk_split = os.getenv("HEDGE_RISK_SPLIT", "0.6").strip()
+                require_htf_on_edges = os.getenv("REQUIRE_HTF_ON_EDGES", "true").strip().lower()
+
                 base_prompt = await load_mcp_prompt(
                     session,
                     "execution_agent",
@@ -523,42 +637,50 @@ async def run_execution_mcp(
                         "min_confidence": str(min_confidence),
                         "honor_hold": "True" if honor_hold else "False",
                         "dry_run": "True" if dry_run else "False",
+                        "HEDGE_MODE": "true" if hedge_mode in {"1","true","yes","on"} else "false",
+                        "HEDGE_MAX_PAIRS": hedge_max_pairs,
+                        "HEDGE_MAX_NET_USD_MULT": hedge_max_net_usd_mult,
+                        "HEDGE_RISK_SPLIT": hedge_risk_split,
+                        "REQUIRE_HTF_ON_EDGES": "true" if require_htf_on_edges in {"1","true","yes","on"} else "false",
                     },
                 )
 
-                # 3) Agent ReAct + timeout simple
+                # 3) Agent ReAct + timeout + simple retry sur erreurs transitoires
                 agent = create_react_agent(model, tools)
-                task = asyncio.create_task(
-                    agent.ainvoke(
-                        {"messages": base_prompt},
-                        config={"recursion_limit": AGENT_RECURSION_LIMIT},
+                last_err = None
+                for attempt in range(2):
+                    task = asyncio.create_task(
+                        agent.ainvoke(
+                            {"messages": base_prompt},
+                            config={"recursion_limit": AGENT_RECURSION_LIMIT},
+                        )
                     )
-                )
-                try:
-                    resp = await asyncio.wait_for(task, timeout=90)
-                except TimeoutError:
-                    logger.error("⏱️ Timeout execution agent (90s)")
-                    with suppress(asyncio.CancelledError):
-                        task.cancel()
-                        await task
-                    return _safe_plan("execution agent timeout")
-                except GraphRecursionError as e:
-                    logger.error(f"GraphRecursionError (execution): {e}")
-                    with suppress(asyncio.CancelledError):
-                        task.cancel()
-                        await task
-                    return _safe_plan("execution graph recursion limit exceeded", {"error": str(e)})
-                except Exception as e:
-                    msg = _format_exception_chain(e)
-                    logger.error("Agent exec invoke failed: " + msg)
-                    with suppress(asyncio.CancelledError):
-                        task.cancel()
-                        await task
-                    return _safe_plan("execution agent error", {"error": msg})
+                    try:
+                        resp = await asyncio.wait_for(task, timeout=90)
+                        break
+                    except TimeoutError:
+                        logger.error("⏱️ Timeout execution agent (90s)")
+                        last_err = "timeout"
+                    except GraphRecursionError as e:
+                        logger.error(f"GraphRecursionError (execution): {e}")
+                        with suppress(asyncio.CancelledError):
+                            task.cancel(); await task
+                        return _safe_plan("execution graph recursion limit exceeded", {"error": str(e)})
+                    except Exception as e:
+                        last_err = _format_exception_chain(e)
+                        logger.error("Agent exec invoke failed: " + last_err)
+                    finally:
+                        with suppress(asyncio.CancelledError):
+                            task.cancel(); await task
+                    # petit backoff avant 2e tentative
+                    await asyncio.sleep(1)
+                else:
+                    # Après 2 tentatives, abandon sécurisé
+                    reason = "execution agent timeout" if last_err == "timeout" else "execution agent error"
+                    return _safe_plan(reason, {"error": last_err} if last_err else None)
 
                 # 4) Extraction + parsage JSON (identique à run_analysis_tec_mcp)
                 raw = extract_last_message(resp)
-                logger.info(f"🚀 run_execution_mcp {raw}")
                 if isinstance(raw, str):
                     lw = raw.lower()
                     if ("need more steps" in lw) or ("sorry" in lw and "step" in lw):
@@ -579,13 +701,44 @@ async def run_execution_mcp(
                     return _safe_plan(f"json parse failed (execution): {e}", {"raw": raw})
 
                 # Normalisation de sortie
-                if isinstance(plan, dict):
-                    return {"plan": plan, "dry_run": dry_run}
-                else:
-                    return {
-                        "plan": {"raw": plan, "decision": {"send_order": False, "reason": "non-dict plan"}},
-                        "dry_run": dry_run,
-                    }
+                result_out = {"plan": plan if isinstance(plan, dict) else {"raw": plan, "decision": {"send_order": False, "reason": "non-dict plan"}}, "dry_run": dry_run}
+
+                # Auto-execution fallback si nécessaire
+                try:
+                    if AUTO_EXECUTE_PLAN and isinstance(result_out.get("plan"), dict):
+                        p = result_out["plan"]
+                        dec = (p.get("decision") or {})
+                        if dec.get("send_order") is True and (p.get("execution_result") in (None, {})):
+                            sym = (p.get("symbol") or (context or {}).get("symbol"))
+                            td = ((context or {}).get("technical_decision") or {})
+                            td_dec = (td.get("decision") or {})
+                            action = str(td_dec.get("action") or dec.get("action") or "").upper()
+                            entry = float(td_dec.get("entry") or 0.0)
+                            sl = td_dec.get("sl")
+                            tp = td_dec.get("tp")
+                            if sym and action in ("BUY","SELL") and sl is not None and tp is not None:
+                                mod = _load_exec_core()
+                                if mod and hasattr(mod, "build_and_execute_trade"):
+                                    logger.warning("[AUTO_EXECUTE] calling build_and_execute_trade")
+                                    resp2 = mod.build_and_execute_trade(
+                                        symbol=sym,
+                                        action=action,
+                                        entry=entry,
+                                        sl=float(sl),
+                                        tp=float(tp),
+                                        volume=float(default_volume),
+                                        comment="AUTO_EXECUTE fallback",
+                                        client_id="",
+                                        dry_run=dry_run,
+                                    )
+                                    try:
+                                        p["execution_result"] = json.loads(resp2) if isinstance(resp2, str) else resp2
+                                    except Exception:
+                                        p["execution_result"] = resp2
+                except Exception as e:
+                    logger.error(f"[AUTO_EXECUTE] failed: {e}")
+
+                return result_out
 
     except Exception as e:
         logger.error(f"❌ Erreur dans run_execution_mcp: {_format_exception_chain(e)}")
@@ -632,28 +785,37 @@ async def trading_agent(params: dict) -> dict:
         logger.info(f"🚀 Début de l'analyse pour {symbol}")
 
         # Étape 1: NEWS (si erreur -> stop)
-        news_analysis = await run_news_mcp(symbol)
-        if not news_analysis.get("ok", True):
-            return _halt(news_analysis.get("reason", news_analysis.get("error", "news error")), news_analysis, None, "news")
+       #  news_analysis = await run_news_mcp(symbol)
+       #  if not news_analysis.get("ok", True):
+       #      return _halt(news_analysis.get("reason", news_analysis.get("error", "news error")), news_analysis, None, "news")
 
-        # Étape 2: ANALYSE TECHNIQUE (si erreur -> stop)
-        decision = await run_analysis_tec_mcp(
-            symbol,
-            period=params["period"],
-            interval=params["interval"],
-            risk_level=params["risk_level"],
-            horizon=params["horizon"],
-        )
+        # Étape 2: ANALYSE TECHNIQUE (chemin direct ou via LLM MCP)
+        decision = None
+        if DIRECT_ANALYSIS_FIRST:
+            decision = _direct_intraday_analysis(
+                symbol,
+                interval=params["interval"],
+                horizon=params["horizon"],
+                risk_level=params["risk_level"],
+            )
+        if not decision:
+            decision = await run_analysis_tec_mcp(
+                symbol,
+                period=params["period"],
+                interval=params["interval"],
+                risk_level=params["risk_level"],
+                horizon=params["horizon"],
+            )
         if not decision.get("ok", True):
-            return _halt(decision.get("reason", decision.get("error", "analysis error")), news_analysis, decision, "analysis")
+            return _halt(decision.get("reason", decision.get("error", "analysis error")), {}, decision, "analysis")
 
         # *** Gating HOLD : on n'appelle pas l'exécution si HOLD + honor_hold=True ***
         action = str(((decision or {}).get("decision", {}) or {}).get("action", "")).upper()
         if params.get("honor_hold", True) and action == "HOLD":
-            return _skip_hold(news_analysis, decision, "Analysis returned HOLD and honor_hold=True; skipping execution.")
+            return _skip_hold({}, decision, "Analysis returned HOLD and honor_hold=True; skipping execution.")
 
         # Étape 3: EXÉCUTION
-        context = {"symbol": symbol, "news_sentiment": news_analysis, "technical_decision": decision}
+        context = {"symbol": symbol, "news_sentiment": {}, "technical_decision": decision}
         execution = await run_execution_mcp(
             context=context,
             default_volume=params["default_volume"],
@@ -667,7 +829,6 @@ async def trading_agent(params: dict) -> dict:
             "symbol": symbol,
             "timestamp": start_time.isoformat(),
             "duration_seconds": duration,
-            "news_sentiment": news_analysis,
             "technical_decision": decision,
             "execution": execution,
             "status": "success",

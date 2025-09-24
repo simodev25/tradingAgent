@@ -1,0 +1,17 @@
+{
+  "scalping": {
+    "min_ticks": 40,
+    "rr_target": 1.3,
+    "spread_frac": 0.03,
+    "sl_atr_mult": 0.6,
+    "tp_atr_mult": 1.4,
+    "min_confidence": 65,
+    "tp_vs_spread_min": 10,
+    "min_confidence_high_vol": 65,
+    "rr_target_high_vol": 2.2
+  },
+  "daytrade": {
+    "spread_frac": 0.05,
+    "min_confidence": 60
+  }
+}

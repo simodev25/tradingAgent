@@ -1,248 +1,290 @@
-# MCP Trading Agents – Analyse & Exécution
+# Trading Agent — News · Technicals · Execution
 
-Système d’agents **MCP (Model Context Protocol)** pour analyser des actifs (news + technique) et **exécuter** des ordres via **MetaApi**, orchestré par un agent (LangGraph + Azure OpenAI).
-
-> ⚠️ **Disclaimer** — Projet à but éducatif. **Pas de conseil financier.** Testez d’abord en **dry-run**, comprenez les risques (SL/TP, lot, volatilité).
+A scheduled trading pipeline that blends **news sentiment** (FinBERT), **multi-timeframe technicals** (EMA/RSI/MACD/ATR/Bollinger + robust levels), and a **safeguarded execution layer** (MetaApi), each isolated in MCP subprocesses.
 
 ---
 
-## 🌐 Architecture
-
-```mermaid
-flowchart LR
-    A[Input: symbol (ex: EURUSD, AAPL)] --> B(Orchestrateur agents.py)
-    B --> C[News MCP\nanalyze_news_mcp.py]
-    B --> D[Tech MCP\nanalyze_tec_mcp.py]
-    C --> E{Synthèse news\nscore/tonalité}
-    D --> F{Indicateurs + Plan brut\n(ATR/EMA/RSI/MACD/BB)}
-    E --> B
-    F --> B
-    B --> G{Règles: min_confidence, honor_hold}
-    G -->|OK| H[Execution MCP\nexecution_mcp.py]
-    H --> I[(MetaApi)]
-    G -->|Sinon| J[HOLD / Dry-run]
-```
-
-**Composants**
-
-* **`analyze_news_mcp.py`** : récupère des news (ex. via `yfinance`), nettoie/summarise et fait un **sentiment** (ex: FinBERT). Retourne score + résumé.
-* **`analyze_tec_mcp.py`** : calcule **EMA/RSI/MACD/ATR/Bollinger** et propose un **plan brut** (entry/SL/TP, sens, sizing minimal).
-* **`execution_mcp.py`** : valide le contexte (risques, `min_confidence`, `honor_hold`) et **envoie l’ordre** via `MetaApi` (ou **dry-run**).
-* **`meta_api.py`** : wrappers REST **MetaApi** (compte, positions, prix, bougies, ordres).
-* **`agents.py`** : **orchestrateur** (LangGraph + AzureChatOpenAI) qui appelle les MCP puis l’exécution.
-
----
-
-## 📁 Structure du projet
-
-```
-.
-├── agents.py                 # Orchestrateur
-├── analyze_news_mcp.py       # MCP News
-├── analyze_tec_mcp.py        # MCP Analyse technique
-├── execution_mcp.py          # MCP Exécution
-├── meta_api.py               # Client MetaApi
-└── README.md                 # Ce fichier
-```
-
-> 💡 Si vous ajoutez un module `yf_api.py`, placez‑le à la racine (cf. section Dépendances & intégrations).
-
----
-
-## 🚀 Démarrage rapide
-
-### 1) Prérequis
-
-* **Python 3.10+** (3.11 recommandé)
-* Accès Internet pour télécharger les modèles/paquets
-* Un compte **MetaApi** (pour l’exécution réelle)
-* **Azure OpenAI** ou compatibilité OpenAI pour l’orchestrateur
-
-### 2) Installation
+## TL;DR (Quick Start)
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -U pip
-pip install -r requirements.txt  # ou voir l’exemple ci-dessous
+cd tradingAgent
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp env.exemple .env   # edit your credentials + URLs
+# edit config.json     # symbols, scheduler, logging, etc.
+python start_trading.py           # scheduler mode
+# or
+python start_trading.py --once    # single run
 ```
 
-**Exemple minimal de `requirements.txt` (à adapter à votre code)**
+Daily results are persisted as `results_YYYYMMDD.json`.
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration](#configuration)
+  - [Environment (.env)](#environment-env)
+  - [Application (configjson)](#application-configjson)
+- [Running](#running)
+  - [Scheduler (recommended)](#scheduler-recommended)
+  - [One-off run](#one-off-run)
+  - [Manual debug](#manual-debug)
+- [Risk & Gatekeeping](#risk--gatekeeping)
+- [MCP Modules](#mcp-modules)
+  - [News](#news-srcmcpanalyseanalyze_news_mcppy)
+  - [Technical Analysis](#technical-analysis-srcmcpanalyseanalyze_tec_mcppy)
+- [Execution](#execution-srcmcpexecutionexecution_mcppy)
+- [Outputs & Monitoring](#outputs--monitoring)
+- [Troubleshooting](#troubleshooting)
+- [Notes](#notes)
+- [License](#license)
+- [Backtesting](#backtesting)
+
+---
+
+## Overview
+
+- **Entry point:** `start_trading.py`
+- **Orchestration:** `src/scheduler.py` (runs every _X_ minutes within trading hours)
+- **Pipeline:** `src/agents.py` launches three MCPs in sequence:
+  1. **News** → global bias with FinBERT
+  2. **Technicals** → BUY/SELL/HOLD + robust SL/TP levels
+  3. **Execution** → send/adjust/cancel with strict safeguards
+
+---
+
+## Architecture
 
 ```
-python-dotenv
-requests
-pydantic>=2
-pandas
-numpy
-yfinance
-beautifulsoup4
-transformers
-torch           # requis par transformers/FinBERT
-mcp             # serveur MCP en Python
-langgraph
-langchain-core
-langchain-openai
+┌────────────────┐     ┌───────────────────┐     ┌────────────────────┐
+│  Scheduler     │──▶──│   News MCP        │──▶──│  Technicals MCP     │
+│ (start_trading)│     │  (FinBERT bias)   │     │ (MTF + levels/RR)   │
+└───────┬────────┘     └─────────┬─────────┘     └──────────┬─────────┘
+        │                          │                         │
+        ▼                          ▼                         ▼
+    batching                strict JSON I/O             HOLD gating, RR,
+   trading hours             timeouts/guardrails        symbol constraints
+        │                                                   │
+        └───────────────────────────────────────────────────▼
+                                            ┌───────────────┴──────────────┐
+                                            │   Execution MCP (MetaApi)    │
+                                            │ info tools + safeguards      │
+                                            └───────────────────────────────┘
 ```
 
-> ℹ️ Si vos indicateurs utilisent une lib externe (ex. `pandas_ta` ou `ta`), ajoutez‑la.
+---
 
-### 3) Configuration (.env)
+## Requirements
 
-Créez un fichier `.env` à la racine :
+- **Python** 3.10+
+- **Hugging Face** access to download `ProsusAI/finbert` (or a local HF cache)
+- **MetaApi** credentials (or run with `dry_run=true`)
+- **LLM via LangChain** (default: `ChatOllama`, local Ollama supported)
 
-```dotenv
-# ---- MetaApi ----
-API_TOKEN=xxxxxxxxxxxxxxxx
-ACCOUNT_ID=xxxxxxxxxxxxxxxx
+---
 
-# ---- Azure OpenAI (orchestrateur) ----
-AZURE_OPENAI_API_KEY=xxxxxxxxxxxxxxxx
-AZURE_OPENAI_ENDPOINT=https://votre-endpoint.openai.azure.com/
-AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini  # ou votre déploiement
-AZURE_OPENAI_API_VERSION=2024-06-01
-
-# ---- Options (facultatives) ----
-HTTP_PROXY=
-HTTPS_PROXY=
-```
-
-### 4) Lancer les MCP (en local)
-
-Dans des terminaux séparés :
+## Installation
 
 ```bash
-python analyze_news_mcp.py
-python analyze_tec_mcp.py
-python execution_mcp.py
+cd tradingAgent
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-> Les serveurs MCP parlent en **STDIO**. Assurez‑vous que l’orchestrateur pointe vers le bon chemin (voir **Conseils & pièges**).
+> **Note (Ollama):** install/start Ollama and ensure the API is reachable (e.g. `http://localhost:11434`).
 
-### 5) Lancer l’orchestrateur
+---
+
+## Configuration
+
+### Environment (.env)
+
+Copy the template and edit:
+```bash
+cp env.exemple .env
+```
+
+Useful keys:
+
+| Key               | Example                      | Notes                                   |
+|-------------------|------------------------------|-----------------------------------------|
+| `OLLAMA_BASE_URL` | `http://localhost:11434`     | Local Ollama endpoint                   |
+| `OLLAMA_MODEL`    | `llama3.1`                   | Any installed model                     |
+| `OLLAMA_API_KEY`  | *(optional)*                 | Usually not required for local Ollama   |
+| MetaApi creds     | *(per your impl)*            | See `src/mcp/data_fetch/meta_api.py`    |
+
+### Application (`config.json`)
+
+Controls symbols, scheduler, and global settings.
+
+**Minimal example:**
+```json
+{
+  "symbols": [
+    {
+      "symbol": "BTCUSD",
+      "period": "5d",
+      "interval": "15m",
+      "horizon": "scalping",
+      "risk_level": "high",
+      "default_volume": 0.01,
+      "min_confidence": 40
+    }
+  ],
+  "global_settings": {
+    "honor_hold": true,
+    "dry_run": true,
+    "news_top_n": 10,
+    "include_columns": "Open,High,Low,Close,Volume",
+    "max_concurrent_symbols": 3
+  },
+  "scheduler": {
+    "enabled": true,
+    "interval_minutes": 15,
+    "start_time": "09:00",
+    "end_time": "17:00",
+    "timezone": "UTC"
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "trading_agent.log",
+    "max_size": "10MB",
+    "backup_count": 5
+  }
+}
+```
+
+---
+
+## Running
+
+### Scheduler (recommended)
 
 ```bash
-python agents.py
+python start_trading.py
 ```
 
-Selon votre implémentation, l’agent peut vous demander un **symbol** (ex: `EURUSD`, `AAPL`) et des **options** (dry-run, min\_confidence, etc.).
+### One-off run
+
+```bash
+python start_trading.py --once
+```
+
+### Manual debug
+
+```bash
+python src/agents.py
+```
 
 ---
 
-## ⚙️ Paramètres clés
+## Risk & Gatekeeping
 
-* **`dry_run`** : `True` pour simuler, `False` pour exécuter réellement via MetaApi.
-* **`honor_hold`** : si le Tech MCP retourne HOLD (risque/volatilité), forcer l’abstention.
-* **`min_confidence`** : seuil minimal de confiance agrégée news + technique.
-* **`default_volume`** : taille par défaut si le sizing dynamique est indisponible.
-
-> 🔧 Assurez‑vous que ces valeurs sont de **vrais booléens/entiers** dans le code (pas des chaînes).
-
----
-
-## 🔌 Dépendances & intégrations
-
-### News
-
-* **yfinance** pour récupérer des news basiques :
-
-  * Vous pouvez créer un petit wrapper `yf_api.py` :
-
-    ```python
-    # yf_api.py
-    import yfinance as yf
-    def get_ticker_news(symbol: str):
-        try:
-            return yf.Ticker(symbol).news or []
-        except Exception:
-            return []
-    ```
-  * Le MCP **News** peut ensuite appeler `get_ticker_news(symbol)`.
-* **NLP / Sentiment** : modèle type **FinBERT** via `transformers`. Préchargez le pipeline une seule fois au démarrage du MCP pour des perfs stables.
-
-### Technique
-
-* Indicateurs calculés sur OHLCV (EMA/RSI/MACD/ATR/Bollinger). Si l’ATR est **très faible** ou `NaN`, le plan devrait **retourner HOLD**.
-
-### Exécution (MetaApi)
-
-* `meta_api.py` expose : infos de compte, positions, prix, bougies, **envoi d’ordre** (market/SL/TP…).
-* Vérifiez la présence de `API_TOKEN` et `ACCOUNT_ID` **avant** tout appel réseau.
+- **HTF Confluence:** if `|score| ≥ 3`, fetch HTF (e.g., M15/H1). Require EMA_fast > EMA_slow and RSI aligned with the trade side. If missing, downgrade confidence (e.g., `≤ 20`) and tag `reason_no_trade=HTF_MISS`.
+- **Volatility Bands (dynamic):** compute `ATR_PCT` percentiles (e.g., p10/p90 over 30 days) **per symbol**. Block trades if outside bands and tag `ATR_GATE(pXX)`.
+- **Symbol Executability:** if `tradeMode=CLOSEONLY`, blacklist execution for 24h (still analyze). Tag `CLOSEONLY`.
+- **Execution Minima:** `confidence ≥ 60`, `RR ≥ 1.5` (scalp), `spread ≤ k * median(5m)`, `slippage ≤ max_pips`. If a rule fails, cancel and log `RULE_FAIL_*`.
+- **Post-Entry Mgmt:** at `+0.5R` → move SL to BE. Use ATR-based trailing (e.g., `ATR(14) * 0.8`) or last swing (M1/M5). Optionally take 50% at TP1.
+- **Exposure Caps:** limit net exposure per currency (e.g., ≤ 0.6 lot/ccy) and alert on breaches.
+- **Telemetry:** log normalized `reason_no_trade`, `htf_snapshot`, `atr_band`, `tradeMode`, `spread`, `slippage_est`. Track counts per reason in dashboards.
 
 ---
 
-## 🧪 Tests rapides (smoke tests)
+## MCP Modules
 
-1. **News MCP**
+### News (`src/mcp/analyse/analyze_news_mcp.py`)
+- **Tool:** `analyze_news(symbol)` — fetches Yahoo Finance headlines, scrapes article text when possible, runs batched FinBERT inference, and computes a weighted global bias.
+- **Prompt:** `news_agent` — strict JSON output (bias, summary, score).
 
-   ```bash
-   python analyze_news_mcp.py  # lance le serveur MCP
-   # puis via l’orchestrateur ou un client MCP, appelez analyze_news(symbol="AAPL")
-   ```
-2. **Tech MCP**
+### Technical Analysis (`src/mcp/analyse/analyze_tec_mcp.py`)
+- **Key tools:**
+  - `get_historical_candles` (with caching)
+  - `compute_indicators` (EMA/RSI/MACD/ATR/Bollinger + market metrics)
+  - `levels_autonomous` (robust SL/TP using HTF anchoring & Fibonacci)
+  - `intraday_decision` (regime: trend/range/no-trade + actionable decision)
+  - `plan_raw` (ATR-based plan)
+- **Hardening:** robust timestamp parsing (s/ms/us/ns/ISO), tick/digits inference, min stop/buffer/spread checks, RR targets per horizon.
+- **Prompt:** `analysis_agent` — ReAct-guided rules, directional scoring, strict JSON.
 
-   ```bash
-   python analyze_tec_mcp.py   # lance le serveur MCP
-   # appelez compute_indicators(...) ou plan_raw(...) avec un petit OHLCV factice
-   ```
-3. **Execution MCP**
-
-   ```bash
-   python execution_mcp.py     # lance le serveur MCP
-   # appelez trade_execute(..., dry_run=True) et vérifiez le payload renvoyé
-   ```
-
----
-
-## 🧭 Conseils & pièges fréquents
-
-* **Chemins des MCP dans `agents.py`** : utilisez des chemins **absolus** basés sur `__file__` pour pointer vers `analyze_news_mcp.py`, `analyze_tec_mcp.py`, `execution_mcp.py`.
-* **Imports `meta_api`** : si `meta_api.py` est à la racine, ajoutez `sys.path.append(os.path.dirname(__file__))` avant `import meta_api` dans vos MCP.
-* **`yf_api` manquant** : ajoutez le wrapper minimal ci‑dessus si vous l’appelez.
-* **Types natifs** : `"FALSE"` (chaîne) est considéré **True** en Python. Utilisez `False` (booléen) pour `dry_run` & co.
-* **Timeouts & taille réponses** : fixez un `timeout` HTTP (ex. 10s) et refusez les réponses trop volumineuses avant parsing.
-* **Arrondis & marchés** : respectez `tick_size`, et idéalement `stopLevel/freezeLevel` du broker pour SL/TP.
+### Execution (`src/mcp/execution/execution_mcp.py`)
+- **Info tools:** `get_account_info`, `get_positions`, `get_orders`, `get_symbol_spec`, `get_current_price`
+- **`execute_trade`:** rounds to symbol constraints, validates SL/TP directionality, LIMIT/STOP vs market, margin, dups/conflicts; supports `dry_run`.
+- **Prompt:** `execution_agent` — enforces use of all info tools, applies safeguards (HOLD gating, confidence, margin, conflict checks), produces a structured plan (`proceed/adjust/cancel`).
 
 ---
 
-## 🧩 Extension du système
+## Outputs & Monitoring
 
-* **Ajouter un nouvel agent MCP** (ex. *Risk MCP*) :
-
-  1. Créez `risk_mcp.py` (serveur MCP stdio)
-  2. Déclarez ses tools (ex. `risk_check(context) -> verdict`)
-  3. Connectez‑le dans `agents.py` (nouvelle étape du graphe)
-  4. Mettez à jour l’agrégation de confiance / règles d’acceptation
-
-* **Remplacer l’LLM** : adaptez le client (OpenAI, Azure, autre) dans l’orchestrateur ; gardez des prompts précis qui appellent **uniquement** les tools attendus.
+- **Results:** `results_YYYYMMDD.json` (latest run of the day)
+- **Logs:** as configured in `config.json` (console + rotating `trading_agent.log`)
+- **Monitoring:** optional `monitor.py` (if present) to visualize recent runs and stats
 
 ---
 
-## 🐞 Dépannage
+## Troubleshooting
 
-* **401/403 MetaApi** : vérifiez `API_TOKEN`, `ACCOUNT_ID`, droits du compte et latence réseau.
-* **Modèle introuvable (transformers)** : assurez‑vous que la machine a accès internet au 1er lancement (cache local ensuite).
-* **Aucun trade envoyé** : `dry_run=True`, `honor_hold=True`, ou `min_confidence` non atteint. Inspectez les logs d’agrégation.
-* **Unicode/HTML dans les news** : nettoyez/strippez avant le LLM pour réduire les hallucinations.
+- **LLM / Ollama**
+  - Set `OLLAMA_BASE_URL=http://localhost:11434` and pick an installed model (`ollama list`).
+  - Temperature is 0; prompts demand strict JSON and the pipeline guards non-JSON output.
 
----
+- **FinBERT / Transformers**
+  - First run downloads the model; ensure time and disk space.
+  - If unavailable, news bias falls back to **neutral**.
 
-## 📚 Roadmap suggérée
+- **MetaApi**
+  - Without valid credentials, keep `"dry_run": true` in `config.json`.
+  - Check `src/mcp/data_fetch/meta_api.py` and corresponding environment variables.
 
-* Pondération **récence/source** dans le scoring des news
-* Gestion **multitimeframe** pour le Tech MCP
-* **Backtesting** simple intégré (Pandas) pour valider le plan brut
-* Vérifs broker : `stopLevel/freezeLevel`, taille minimale et pas de lot
-* Journaling structuré des décisions (JSONL) + métriques (Prometheus)
-
----
-
-## 📜 Licence
-
-Proposé sous **MIT** par défaut (à adapter selon vos besoins).
+- **Trading hours**
+  - Adjust `scheduler.timezone`, `start_time`, `end_time`. On errors, the scheduler behaves permissively.
 
 ---
 
-## 🙌 Contributions
+## Notes
 
-Issues et PR bienvenues. Merci de décrire votre environnement (OS, Python, versions libs) et de fournir un log minimal reproductible.
+- LangChain and related deps evolve quickly. Pin compatible versions in `requirements.txt`.
+- MCP outputs are strict JSON. The parser handles code-fence blocks and bracket balancing with conservative fallbacks.
+
+---
+
+## Backtesting
+
+- Utilisez `src/backtest/engine.py` pour rejouer la stratégie sur des données historiques **déterministes** (sans appel MCP).
+- Préparez un CSV par symbole incluant les colonnes `Date,Open,High,Low,Close[,Volume]` (horodatage ISO ou epoch) sur le timeframe natif du run (ex: 15 minutes).
+- Exemple rapide :
+
+```bash
+python -m src.backtest.engine \
+  --symbol BTCUSD \
+  --data data/BTCUSD_15m.csv \
+  --interval 15m \
+  --horizon scalping \
+  --risk-level high \
+  --cost-bps 7.0 \
+  --slippage-bps 1.5 \
+  --warmup 240 \
+  --max-hold 32 \
+  --initial-equity 100000 \
+  --risk-allocation 0.5
+```
+
+- Le moteur applique :
+  - calculs indicateurs identiques à la brique technique (`analysis_core`) ;
+  - gating de volatilité, régime et confiance ;
+  - génération d’un plan (entry/sl/tp) via `plan_raw_from_json` ;
+  - simulation barre par barre avec slip + coûts (`cost_bps`) et limite de maintien (`max-hold`) ;
+  - métriques de performance (CAGR, Sharpe, drawdown) et test t (p-value) pour valider l’edge.
+- Les résultats sont imprimés dans la console et peuvent être consommés via `Backtester(...).run().to_dict()` pour intégrer votre propre reporting.
+- **Note** : fournissez vos propres historiques (MetaApi export, broker, etc.). Aucun téléchargement réseau n’est effectué par défaut.
+
+---
+
+## License
+
+Provided as-is for research and experimentation. Ensure regulatory compliance and always test with `dry_run` before production.
