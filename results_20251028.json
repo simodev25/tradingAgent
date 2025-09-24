@@ -1,0 +1,934 @@
+[
+  {
+    "symbol": "EURUSD.pro",
+    "timestamp": "2025-10-28T18:49:48.947500+01:00",
+    "duration_seconds": 35.347412,
+    "news_sentiment": {
+      "global_bias": "neutral",
+      "reason": "L'analyse des actualités n'a trouvé qu'un seul article de sentiment neutre, indiquant une absence de pression directionnelle significative sur la paire EUR/USD.",
+      "summary": {
+        "positive": 0.0,
+        "negative": 0.0,
+        "neutral": 1.0
+      },
+      "global_score": 0.0,
+      "top_influential_titles": [],
+      "ok": true
+    },
+    "technical_decision": {
+      "symbol": "EURUSD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "BUY",
+        "entry": 1.16639,
+        "sl": 1.16569,
+        "tp": 1.16709,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Score directionnel +4 (EMA, MACD, RSI, BB alignés), volatilité normale, régime range",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0005728772,
+        "p10": 0.0002618254,
+        "p90": 0.0005954286,
+        "p95": 0.0006660265,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "ok": true
+    },
+    "execution": {
+      "plan": {
+        "symbol": "EURUSD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": null,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": null,
+          "symbol_direction": null
+        },
+        "account_checks": {
+          "equity": null,
+          "free_margin": null,
+          "margin_required_est": null,
+          "margin_ok": false,
+          "margin_reason": "Informations de compte non disponibles"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": null,
+          "direction_ok": null,
+          "spec_ok": null,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Impossible de vérifier les informations de compte et de marge"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Annulation car les vérifications de compte et de marge ont échoué - impossible d'obtenir les informations nécessaires",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "GBPUSD.pro",
+    "timestamp": "2025-10-28T18:49:48.664181+01:00",
+    "duration_seconds": 35.062757,
+    "news_sentiment": {
+      "global_bias": "neutral",
+      "reason": "L'analyse n'a trouvé aucune nouvelle récente avec un biais positif ou négatif. Le flux d'information est entièrement neutre, indiquant une absence de facteurs fondamentaux significatifs influençant la paire GBP/USD actuellement.",
+      "summary": {
+        "positive": 0.0,
+        "negative": 0.0,
+        "neutral": 1.0
+      },
+      "global_score": 0.0,
+      "top_influential_titles": [],
+      "ok": true
+    },
+    "technical_decision": {
+      "symbol": "GBPUSD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "HOLD",
+        "entry": null,
+        "sl": null,
+        "tp": null,
+        "confidence": 0,
+        "risk_level": "high"
+      },
+      "reason": "Score directionnel -1.0 insuffisant pour signal",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0007097214,
+        "p10": 0.0003087235,
+        "p90": 0.000815317,
+        "p95": 0.0008829863,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "ok": true
+    },
+    "execution": {
+      "plan": {
+        "symbol": "GBPUSD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 0,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": null,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": null,
+          "symbol_direction": null
+        },
+        "account_checks": {
+          "equity": null,
+          "free_margin": null,
+          "margin_required_est": null,
+          "margin_ok": false,
+          "margin_reason": "Non vérifié - ordre annulé avant vérification"
+        },
+        "tools_used": {
+          "get_account_info": false,
+          "get_positions": false,
+          "get_orders": false,
+          "get_symbol_spec": false,
+          "get_current_price": false
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": false,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Action HOLD avec confiance 0 insuffisante (min_confidence = 60)"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "L'analyse technique indique HOLD avec une confiance de 0%, inférieure au seuil minimum de 60% requis pour trader",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "AUDUSD.pro",
+    "timestamp": "2025-10-28T18:49:42.843529+01:00",
+    "duration_seconds": 29.241842,
+    "news_sentiment": {
+      "global_bias": "neutral",
+      "reason": "L'analyse des actualités n'a trouvé qu'un seul article de sentiment neutre, indiquant une absence de pression directionnelle significative sur la paire.",
+      "summary": {
+        "positive": 0.0,
+        "negative": 0.0,
+        "neutral": 1.0
+      },
+      "global_score": 0.0,
+      "top_influential_titles": [],
+      "ok": true
+    },
+    "technical_decision": {
+      "symbol": "AUDUSD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "HOLD",
+        "entry": null,
+        "sl": null,
+        "tp": null,
+        "confidence": 0,
+        "risk_level": "high"
+      },
+      "reason": "Score directionnel = 1 (EMA:1, MACD:-1, RSI:1, BB:1) - pas de confluence suffisante pour BUY/SELL",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0006088876,
+        "p10": 0.0003559628,
+        "p90": 0.0007866185,
+        "p95": 0.0008274086,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "ok": true
+    },
+    "execution": {
+      "plan": {
+        "symbol": "AUDUSD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 0,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": null,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": null,
+          "symbol_direction": null
+        },
+        "account_checks": {
+          "equity": null,
+          "free_margin": null,
+          "margin_required_est": null,
+          "margin_ok": false,
+          "margin_reason": "Non vérifié - ordre annulé avant vérification"
+        },
+        "tools_used": {
+          "get_account_info": false,
+          "get_positions": false,
+          "get_orders": false,
+          "get_symbol_spec": false,
+          "get_current_price": false
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": false,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Action HOLD avec confiance 0 < min_confidence 60 - pas de confluence suffisante pour trade"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Règle 1: Action HOLD avec confiance 0 < seuil minimum de 60 - pas de confluence technique suffisante pour ouvrir une position",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "NZDUSD.pro",
+    "timestamp": "2025-10-28T18:49:41.135567+01:00",
+    "duration_seconds": 27.533824,
+    "news_sentiment": {
+      "global_bias": "neutral",
+      "reason": "L'analyse n'a trouvé qu'une seule actualité classée comme neutre, indiquant une absence d'informations significatives récentes pour influencer la paire NZD/USD.",
+      "summary": {
+        "positive": 0.0,
+        "negative": 0.0,
+        "neutral": 1.0
+      },
+      "global_score": 0.0,
+      "top_influential_titles": [],
+      "ok": true
+    },
+    "technical_decision": {
+      "symbol": "NZDUSD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "BUY",
+        "entry": 0.57852,
+        "sl": 0.57782,
+        "tp": 0.57922,
+        "confidence": 75,
+        "risk_level": "high"
+      },
+      "reason": "Score directionnel positif (2.0) avec confluence. Régime range, volatilité normale.",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0007014905,
+        "p10": 0.0002599719,
+        "p90": 0.0008243052,
+        "p95": 0.0009486938,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "ok": true
+    },
+    "execution": {
+      "plan": {
+        "symbol": "NZDUSD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 75,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": null,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": null,
+          "symbol_direction": null
+        },
+        "account_checks": {
+          "equity": null,
+          "free_margin": null,
+          "margin_required_est": null,
+          "margin_ok": false,
+          "margin_reason": "Information de compte non disponible"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": false,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Échec de la récupération des informations de compte"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Impossible de vérifier les marges et l'exposition du portefeuille en raison d'un échec technique",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "USDCAD.pro",
+    "timestamp": "2025-10-28T18:49:53.416044+01:00",
+    "duration_seconds": 39.814279,
+    "news_sentiment": {
+      "global_bias": "neutral",
+      "reason": "L'analyse n'a trouvé qu'un seul article de sentiment neutre, indiquant une absence de pression directionnelle significative sur la paire USDCAD.",
+      "summary": {
+        "positive": 0.0,
+        "negative": 0.0,
+        "neutral": 1.0
+      },
+      "global_score": 0.0,
+      "top_influential_titles": [],
+      "ok": true
+    },
+    "technical_decision": {
+      "symbol": "USDCAD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "HOLD",
+        "entry": null,
+        "sl": null,
+        "tp": null,
+        "confidence": 0,
+        "risk_level": "high"
+      },
+      "reason": "Volatilité élevée (bande HIGH) avec réduction de taille requise",
+      "regime": "no-trade",
+      "volatility": {
+        "atr_pct_now": 0.0004632864,
+        "p10": 0.0002308765,
+        "p90": 0.0004392044,
+        "p95": 0.0005344504,
+        "band": "HIGH",
+        "size_factor": 0.7,
+        "reason": "ATR_HIGH_SIZE_DOWN"
+      },
+      "ok": true
+    },
+    "execution": {
+      "plan": {
+        "symbol": "USDCAD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 0,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": null,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": null,
+          "symbol_direction": null
+        },
+        "account_checks": {
+          "equity": null,
+          "free_margin": null,
+          "margin_required_est": null,
+          "margin_ok": false,
+          "margin_reason": "Non vérifié - ordre annulé avant vérification"
+        },
+        "tools_used": {
+          "get_account_info": false,
+          "get_positions": false,
+          "get_orders": false,
+          "get_symbol_spec": false,
+          "get_current_price": false
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": false,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Règle 1: Action HOLD avec confiance 0 < 60 et régime no-trade"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "L'analyse technique indique HOLD avec volatilité élevée et confiance insuffisante (0 < 60), régime no-trade",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "USDCHF.pro",
+    "timestamp": "2025-10-28T18:49:45.929218+01:00",
+    "duration_seconds": 32.32732,
+    "news_sentiment": {
+      "global_bias": "neutral",
+      "reason": "L'analyse n'a trouvé qu'une seule actualité classée comme neutre, indiquant une absence d'informations significatives ou récentes pour établir une tendance haussière ou baissière.",
+      "summary": {
+        "positive": 0.0,
+        "negative": 0.0,
+        "neutral": 1.0
+      },
+      "global_score": 0.0,
+      "top_influential_titles": [],
+      "ok": true
+    },
+    "technical_decision": {
+      "symbol": "USDCHF.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "HOLD",
+        "entry": null,
+        "sl": null,
+        "tp": null,
+        "confidence": 0,
+        "risk_level": "high"
+      },
+      "reason": "Score directionnel -2: EMA négatif, MACD positif, RSI négatif, Bollinger négatif - volatilité normale mais pas de confluence",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0006555233,
+        "p10": 0.0003358247,
+        "p90": 0.0006940655,
+        "p95": 0.0007617167,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "ok": true
+    },
+    "execution": {
+      "plan": {
+        "symbol": "USDCHF.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 0,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": null,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": null,
+          "symbol_direction": null
+        },
+        "account_checks": {
+          "equity": null,
+          "free_margin": null,
+          "margin_required_est": null,
+          "margin_ok": false,
+          "margin_reason": "Non vérifié - ordre annulé avant vérification"
+        },
+        "tools_used": {
+          "get_account_info": false,
+          "get_positions": false,
+          "get_orders": false,
+          "get_symbol_spec": false,
+          "get_current_price": false
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": false,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Action HOLD avec confiance 0 < 60 (min_confidence)"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "L'ordre est annulé car l'analyse technique indique HOLD avec une confiance de 0%, inférieure au seuil minimum de 60% requis pour trader",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "EURGBP.pro",
+    "timestamp": "2025-10-28T18:49:45.672736+01:00",
+    "duration_seconds": 32.070737,
+    "news_sentiment": {
+      "global_bias": "neutral",
+      "reason": "L'analyse n'a trouvé qu'une seule actualité, classée comme neutre. Aucune influence positive ou négative significative n'a été détectée sur la paire EURGBP.",
+      "summary": {
+        "positive": 0.0,
+        "negative": 0.0,
+        "neutral": 1.0
+      },
+      "global_score": 0.0,
+      "top_influential_titles": [],
+      "ok": true
+    },
+    "technical_decision": {
+      "symbol": "EURGBP.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "BUY",
+        "entry": 0.8784,
+        "sl": 0.8777,
+        "tp": 0.8791,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Score directionnel +3/4 (EMA, RSI, Bollinger positifs) en confluence, volatilité normale",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0004997813,
+        "p10": 0.0002016618,
+        "p90": 0.0006070016,
+        "p95": 0.0006932771,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "ok": true
+    },
+    "execution": {
+      "plan": {
+        "symbol": "EURGBP.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": null,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": null,
+          "symbol_direction": null
+        },
+        "account_checks": {
+          "equity": null,
+          "free_margin": null,
+          "margin_required_est": null,
+          "margin_ok": false,
+          "margin_reason": "Informations de compte non disponibles"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": false,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "unknown",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Impossible de vérifier les informations de compte et de marge"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Annulation car impossible de vérifier les informations de compte et de marge via get_account_info",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "EURCHF.pro",
+    "timestamp": "2025-10-28T18:49:48.562156+01:00",
+    "duration_seconds": 34.960025,
+    "news_sentiment": {
+      "global_bias": "neutral",
+      "reason": "L'analyse n'a trouvé aucune actualité récente avec un biais positif ou négatif. Le seul article classé est neutre, indiquant une absence d'influence directionnelle significative sur la paire.",
+      "summary": {
+        "positive": 0.0,
+        "negative": 0.0,
+        "neutral": 1.0
+      },
+      "global_score": 0.0,
+      "top_influential_titles": [],
+      "ok": true
+    },
+    "technical_decision": {
+      "symbol": "EURCHF.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "HOLD",
+        "entry": null,
+        "sl": null,
+        "tp": null,
+        "confidence": 0,
+        "risk_level": "high"
+      },
+      "reason": "Score directionnel neutre (0.0) - pas de confluence pour BUY/SELL",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0004135946,
+        "p10": 0.0001928117,
+        "p90": 0.00042336,
+        "p95": 0.0004675959,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "ok": true
+    },
+    "execution": {
+      "plan": {
+        "symbol": "EURCHF.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 0,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": null,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": null,
+          "symbol_direction": null
+        },
+        "account_checks": {
+          "equity": null,
+          "free_margin": null,
+          "margin_required_est": null,
+          "margin_ok": false,
+          "margin_reason": "Non vérifié - ordre annulé avant vérification"
+        },
+        "tools_used": {
+          "get_account_info": false,
+          "get_positions": false,
+          "get_orders": false,
+          "get_symbol_spec": false,
+          "get_current_price": false
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": false,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Action HOLD avec confiance 0 - pas de confluence pour BUY/SELL"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Règle 1: Action HOLD avec confiance 0 < min_confidence 60 - annulation obligatoire",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "CADCHF.pro",
+    "timestamp": "2025-10-28T18:49:21.656159+01:00",
+    "duration_seconds": 8.05383,
+    "news_sentiment": {
+      "ok": false,
+      "global_bias": "neutral",
+      "reason": "non-json content from news agent",
+      "summary": {
+        "positive": 0,
+        "negative": 0,
+        "neutral": 1
+      },
+      "global_score": 0.0,
+      "top_influential_titles": [],
+      "raw": "Je vois que vous souhaitez analyser les nouvelles pour CADCHF, mais je remarque que le symbole \"CADCHF.pro\" n'est pas standard. Pour utiliser l'outil d'analyse des nouvelles, j'ai besoin d'un symbole valide comme \"CADCHF\" ou un autre symbole de paire de devises standard.\n\nPourriez-vous me préciser le symbole exact que vous souhaitez analyser ? Par exemple :\n- \"CADCHF\" pour la paire dollar canadien/franc suisse\n- Ou un autre symbole de votre choix\n\nUne fois que vous me fournirez le symbole correct, je pourrai appeler l'outil d'analyse des nouvelles et vous fournir les résultats au format JSON requis."
+    },
+    "technical_decision": null,
+    "execution": {
+      "skipped": true,
+      "reason": "pipeline halted at news: non-json content from news agent"
+    },
+    "status": "success",
+    "stopped_at": "news"
+  },
+  {
+    "symbol": "AUDCAD.pro",
+    "timestamp": "2025-10-28T18:49:20.463737+01:00",
+    "duration_seconds": 6.861391,
+    "news_sentiment": {
+      "ok": false,
+      "global_bias": "neutral",
+      "reason": "non-json content from news agent",
+      "summary": {
+        "positive": 0,
+        "negative": 0,
+        "neutral": 1
+      },
+      "global_score": 0.0,
+      "top_influential_titles": [],
+      "raw": "Je vois que vous souhaitez analyser les nouvelles pour AUDCAD, mais je remarque que vous n'avez pas spécifié le symbole dans votre message. Pour utiliser l'outil d'analyse des nouvelles, j'ai besoin du symbole exact que vous souhaitez analyser.\n\nPourriez-vous me préciser le symbole que vous voulez que j'analyse ? Par exemple, est-ce \"AUDCAD\" ou un autre symbole spécifique ?"
+    },
+    "technical_decision": null,
+    "execution": {
+      "skipped": true,
+      "reason": "pipeline halted at news: non-json content from news agent"
+    },
+    "status": "success",
+    "stopped_at": "news"
+  },
+  {
+    "symbol": "AUDNZD.pro",
+    "timestamp": "2025-10-28T18:49:44.162783+01:00",
+    "duration_seconds": 30.560225,
+    "news_sentiment": {
+      "global_bias": "neutral",
+      "reason": "L'analyse n'a trouvé qu'une seule actualité classée comme neutre, sans aucun élément positif ou négatif identifié. Cela indique une absence de facteurs directionnels significatifs pour la paire.",
+      "summary": {
+        "positive": 0.0,
+        "negative": 0.0,
+        "neutral": 1.0
+      },
+      "global_score": 0.0,
+      "top_influential_titles": [],
+      "ok": true
+    },
+    "technical_decision": {
+      "symbol": "AUDNZD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "BUY",
+        "entry": 1.13871,
+        "sl": 1.13771,
+        "tp": 1.14071,
+        "confidence": 75,
+        "risk_level": "high"
+      },
+      "reason": "Score directionnel +2 (EMA, RSI, Bollinger positifs), confluence avec tendance haussière, volatilité normale",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0004604476,
+        "p10": 0.0001775834,
+        "p90": 0.000563179,
+        "p95": 0.000748565,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "ok": true
+    },
+    "execution": {
+      "plan": {
+        "symbol": "AUDNZD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 75,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": 0,
+          "symbol_floating_pnl": 0,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 46980.01,
+          "free_margin": 46980.01,
+          "margin_required_est": 0,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": false,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": true,
+          "direction_ok": true,
+          "spec_ok": true,
+          "rr": 1.0,
+          "tp_vs_spread_ratio": 2.0,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Ratio TP/spread insuffisant (2.0 < 4 requis)"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Ratio TP/spread insuffisant selon les règles de trading",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  }
+]

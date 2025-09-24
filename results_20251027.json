@@ -1,0 +1,198 @@
+[
+  {
+    "symbol": "EURUSD.pro",
+    "timestamp": "2025-10-27T17:35:44.491128+01:00",
+    "duration_seconds": 30.833191,
+    "news_sentiment": {
+      "global_bias": "neutral",
+      "reason": "No significant news affecting EURUSD",
+      "summary": {
+        "positive": 0,
+        "negative": 0,
+        "neutral": 1
+      },
+      "global_score": 0.0,
+      "top_influential_titles": [],
+      "ok": true
+    },
+    "technical_decision": {
+      "symbol": "EURUSD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "HOLD",
+        "entry": null,
+        "sl": null,
+        "tp": null,
+        "confidence": 50,
+        "risk_level": "high"
+      },
+      "reason": "Score +2, volatilité normale, regime range, pas de confluence TF supérieure → HOLD",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0004397560111155577,
+        "p10": 0.0002672343668785702,
+        "p90": 0.0007210054686028066,
+        "p95": 0.0008707156817278181,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "ok": true
+    },
+    "execution": {
+      "plan": {
+        "symbol": "EURUSD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 50,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": null,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": null,
+          "symbol_direction": null
+        },
+        "account_checks": {
+          "equity": 46989.83,
+          "free_margin": 46989.83,
+          "margin_required_est": 0,
+          "margin_ok": true,
+          "margin_reason": "no positions"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": false,
+          "get_symbol_spec": false,
+          "get_current_price": false
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": false,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Confidence below threshold (50) and action HOLD per rule 1"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Confidence below 60 and action HOLD per rule 1",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "EURUSD.pro",
+    "timestamp": "2025-10-27T17:45:46.973875+01:00",
+    "duration_seconds": 46.96426,
+    "news_sentiment": {
+      "global_bias": "neutral",
+      "reason": "No significant news affecting EURUSD",
+      "summary": {
+        "positive": 0,
+        "negative": 0,
+        "neutral": 1
+      },
+      "global_score": 0.0,
+      "top_influential_titles": [],
+      "ok": true
+    },
+    "technical_decision": {
+      "symbol": "EURUSD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "BUY",
+        "entry": 1.16386,
+        "sl": 1.16323,
+        "tp": 1.16477,
+        "confidence": 25,
+        "risk_level": "high"
+      },
+      "reason": "Confluence positive sur EMA et BB, MACD légèrement négatif, RSI neutre, ATR faible, donc position longue.",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.00039832992830920116,
+        "p10": 0.00025662238920315264,
+        "p90": 0.0007209979465417201,
+        "p95": 0.0008706948645650413,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "ok": true
+    },
+    "execution": {
+      "plan": {
+        "symbol": "EURUSD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 25,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": null,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": null,
+          "symbol_direction": null
+        },
+        "account_checks": {
+          "equity": 10000,
+          "free_margin": 5000,
+          "margin_required_est": 2000,
+          "margin_ok": true,
+          "margin_reason": "sufficient"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": true,
+          "spec_ok": true,
+          "rr": 1.444,
+          "tp_vs_spread_ratio": 8.7,
+          "hedge_ok": false
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "confidence < 60"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "confidence < 60",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": "cancelled"
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  }
+]

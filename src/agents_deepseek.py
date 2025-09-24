@@ -41,7 +41,7 @@ ollama_api_key = os.getenv("OLLAMA_API_KEY")
 model = ChatOllama(
     model=ollama_model,
     base_url=ollama_base_url,
-    temperature=0,
+    model_kwargs={"num_ctx": 32768}, 
     client_kwargs={"headers": {"Authorization": ollama_api_key}},
 )
 
@@ -220,12 +220,17 @@ async def run_news_mcp(symbol: str) -> dict:
                 )
 
                 agent = create_react_agent(model, tools)
-
-                resp = await agent.ainvoke(
-                    {"messages": base_prompt},
-                    config={"recursion_limit": AGENT_RECURSION_LIMIT},
-                )
-
+                try:
+                  
+                    print("resp :run_news_mcp")
+                    print(agent)
+                    resp = await agent.ainvoke(
+                        {"messages": base_prompt}
+                    )
+                    print(resp)
+                    print("resp :run_news_mcp end ")
+                except Exception as e:
+                    print(e)
                 raw = extract_last_message(resp)
 
 
@@ -346,7 +351,12 @@ async def run_analysis_tec_mcp(
             async with ClientSession(read, write) as session:
                 await session.initialize()
                 tools = await load_mcp_tools(session)
-
+                whitelist = {
+                    "get_historical_candles",
+                    "compute_indicators"
+                 # garde-le si tu l’utilises vraiment
+                }
+                tools = [t for t in tools if getattr(t, "name", "") in whitelist]
                 base_prompt = await load_mcp_prompt(
                     session,
                     "analysis_agent",
@@ -359,40 +369,22 @@ async def run_analysis_tec_mcp(
                     },
                 )
 
-                agent = create_react_agent(model, tools)
+                agent = create_react_agent(model,tools)
 
-                task = asyncio.create_task(
-                    agent.ainvoke(
-                        {"messages": base_prompt},
-                        config={"recursion_limit": AGENT_RECURSION_LIMIT},
-                    )
-                )
                 try:
-                    resp = await asyncio.wait_for(task, timeout=180)
-                except TimeoutError:
-                    logger.error("⏱️ Timeout analysis agent (60s)")
-                    task.cancel()
-                    with suppress(asyncio.CancelledError):
-                        await task
-                    return _fallback("analysis agent timeout", {"error": "timeout"})
-                except GraphRecursionError as e:
-                    logger.error(f"GraphRecursionError (analysis): {e}")
-                    task.cancel()
-                    with suppress(asyncio.CancelledError):
-                        await task
-                    return _fallback("analysis graph recursion limit exceeded", {"error": str(e)})
-                except Exception as e:
-                    msg = _format_exception_chain(e)
-                    if "GraphRecursionError" in msg:
-                        logger.error(f"GraphRecursionError (wrapped): {msg}")
-                        task.cancel()
-                        with suppress(asyncio.CancelledError):
-                            await task
-                        return _fallback("analysis graph recursion (wrapped) exceeded", {"error": msg})
-                    logger.error("Analysis agent invoke failed: " + msg)
-                    raise
+                   
+                    print("run_analysis_tec_mcp")
+                    resp = await agent.ainvoke(
+                        {"messages": base_prompt}
+                    )
 
+                    print(resp)
+                    print("resp :run_analysis_tec_mcp end ")
+                except Exception as e:
+                    print(e)
                 raw = extract_last_message(resp)
+
+
 
                 # ➜ Si la réponse n’est pas du JSON (ex. “need more steps”), on fallback sans lever d’exception
                 if isinstance(raw, str):
@@ -688,7 +680,7 @@ if __name__ == "__main__":
             trading_agent(
                 {
                     "symbol": "BTCUSD",
-                    "period": "5d",
+                    "period": "1h",
                     "interval": "15m",
                     "news_top_n": 10,
                     "include_columns": "Open,High,Low,Close,Volume",
