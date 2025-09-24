@@ -450,6 +450,128 @@ def compute_indicators(
         return _err("compute_indicators failed", exc=str(e))
 
 
+# ================================================================
+# --------------- Volatility (ATR% percentile) helpers -----------
+# ================================================================
+
+def _atr_pct_bands_from_df(
+    df: pd.DataFrame,
+    lookback_days: int = 30,
+    low_pct: int = 10,
+    high_pct: int = 90,
+    extreme_pct: int = 95,
+) -> Optional[Dict[str, float]]:
+    """Calcule p10/p90/p95 de ATR_PCT sur la fenêtre 'lookback_days' (fallback: dernières 2000 barres)."""
+    if df is None or "Date" not in df.columns or "ATR_PCT" not in df.columns or df.empty:
+        return None
+    try:
+        cutoff = df["Date"].max() - pd.Timedelta(days=int(lookback_days))
+        s = df.loc[df["Date"] >= cutoff, "ATR_PCT"].dropna()
+        if s.size < 50:  # fallback si peu d'historique dans la fenêtre
+            s = df["ATR_PCT"].dropna().tail(2000)
+        if s.size < 20:
+            return None
+        p10 = float(np.percentile(s, low_pct))
+        p90 = float(np.percentile(s, high_pct))
+        p95 = float(np.percentile(s, extreme_pct)) if extreme_pct else None
+        atr_now = float(df["ATR_PCT"].iloc[-1])
+        return {"atr_now": atr_now, "p10": p10, "p90": p90, "p95": p95}
+    except Exception:
+        return None
+
+
+def _classify_vol_band(
+    atr_now: float,
+    p10: float,
+    p90: float,
+    p95: Optional[float] = None,
+    size_high: float = 0.5,
+) -> Dict[str, Any]:
+    """Classe LOW/NORMAL/HIGH/EXTREME + size_factor & reason."""
+    if atr_now is None or not np.isfinite(atr_now):
+        return {"band": "NORMAL", "size_factor": 1.0, "reason": "ATR_NA"}
+    if p10 is not None and atr_now < p10:
+        return {"band": "LOW", "size_factor": 0.0, "reason": "ATR_GATE_LOW"}
+    if p95 is not None and atr_now > p95:
+        return {"band": "EXTREME", "size_factor": 0.0, "reason": "ATR_GATE_HIGH"}
+    if p90 is not None and atr_now > p90:
+        return {"band": "HIGH", "size_factor": float(size_high), "reason": "ATR_HIGH_SIZE_DOWN"}
+    return {"band": "NORMAL", "size_factor": 1.0, "reason": "ATR_OK"}
+
+
+def _volatility_gate(
+    atr_now: float,
+    p10: float,
+    p90: float,
+    p95: Optional[float] = None,
+    size_high: float = 0.5,
+) -> Tuple[bool, str, float, str]:
+    """
+    Renvoie: allowed, band ('LOW'|'NORMAL'|'HIGH'|'EXTREME'), size_factor, reason_code
+    """
+    cls = _classify_vol_band(atr_now, p10, p90, p95, size_high)
+    band = cls["band"]
+    if band in ("LOW", "EXTREME"):
+        return False, band, cls["size_factor"], cls["reason"]
+    return True, band, cls["size_factor"], cls["reason"]
+
+
+# ================================================================
+# -------------------- Volatility Bands Tool ---------------------
+# ================================================================
+
+@mcp.tool()
+def volatility_bands(
+    ohlcv: Annotated[Optional[List[Dict[str, Any]]], Field(description="OHLCV (optionnel si cache_key)")] = None,
+    cache_key: Annotated[Optional[str], Field(description="clé de cache de get_historical_candles")] = None,
+    lookback_days: int = 30,
+    low_pct: int = 10,
+    high_pct: int = 90,
+    extreme_pct: int = 95,
+    size_high: float = 0.5,
+) -> str:
+    """Retourne ATR_PCT_now + p10/p90/p95 + band + size_factor + reason (par symbole/TF)."""
+    try:
+        # Source
+        src = None
+        if cache_key:
+            src = CANDLE_CACHE.get(cache_key)
+            if src is None:
+                return _err("cache_key not found", cache_key=cache_key)
+        elif ohlcv is not None:
+            src = ohlcv
+        else:
+            return _err("Missing ohlcv or cache_key")
+
+        # DataFrame + indicateurs (ATR_PCT)
+        df = _df_from_ohlcv(src)
+        if df is None or df.empty:
+            return _err("Invalid OHLCV")
+        df = _compute_indicators_df(df)
+
+        bands = _atr_pct_bands_from_df(df, lookback_days, low_pct, high_pct, extreme_pct)
+        if bands is None:
+            return _err("Not enough data to compute percentiles", rows=len(df))
+
+        cls = _classify_vol_band(bands["atr_now"], bands["p10"], bands["p90"], bands.get("p95"), size_high=size_high)
+        payload = {
+            "atr_pct_now": bands["atr_now"],
+            "p10": bands["p10"],
+            "p90": bands["p90"],
+            "p95": bands.get("p95"),
+            "band": cls["band"],
+            "size_factor": cls["size_factor"],
+            "reason": cls["reason"],
+        }
+        return _ok(payload)
+    except Exception as e:
+        return _err("volatility_bands failed", exc=str(e))
+
+
+# ================================================================
+# -------------------- Other Base Tools --------------------------
+# ================================================================
+
 @mcp.tool()
 def plan_raw(
     ohlcv: Annotated[List[Dict[str, Any]], Field(description="OHLCV records")],
@@ -819,11 +941,20 @@ def intraday_decision(
     symbol: str,
     interval: str = "15m",          # "5m" ou "15m"
     equity: float = 10000.0,         # capital de référence en EUR
-    risk_pct: float = 0.005,         # 0.5% par trade (ajuste selon ta gestion)
-    cap_leverage: float = 5.0,       # plafond de notionnel ≈ levier max
+    risk_pct: float = 0.005,         # 0.5% par trade
+    cap_leverage: float = 5.0,       # plafond notionnel
     risk_level: str = "medium",
+
+    # ---- Filtre de volatilité (configurable) ----
+    vol_enabled: bool = True,
+    lookback_days: int = 30,
+    vol_low_pct: int = 10,
+    vol_high_pct: int = 90,
+    vol_extreme_pct: int = 95,
+    vol_size_high: float = 0.5,      # taille réduite si p90 < ATR% ≤ p95
+    require_htf_on_edges: bool = True,
 ) -> str:
-    """Décision tradable (intraday) alignée Senior Quant-Trader."""
+    """Décision intraday avec filtre de volatilité dynamique (ATR% percentiles)."""
     try:
         interval = interval.lower()
         if interval not in {"5m", "15m"}:
@@ -838,6 +969,35 @@ def intraday_decision(
         last_ltf = _last_row(ltf)
         last_htf = _last_row(htf)
 
+        # ---------------- Volatility gating (percentiles) ----------------
+        vol_meta = None
+        if vol_enabled:
+            bands = _atr_pct_bands_from_df(
+                ltf, lookback_days=lookback_days,
+                low_pct=vol_low_pct, high_pct=vol_high_pct, extreme_pct=vol_extreme_pct
+            )
+            if bands is not None:
+                allowed, band, size_factor, reason_code = _volatility_gate(
+                    bands["atr_now"], bands["p10"], bands["p90"], bands.get("p95"), size_high=vol_size_high
+                )
+                vol_meta = {"atr_pct_now": bands["atr_now"], "p10": bands["p10"], "p90": bands["p90"], "p95": bands.get("p95"),
+                            "band": band, "size_factor": size_factor, "reason": reason_code}
+
+                # Hard gate si LOW ou EXTREME
+                if not allowed:
+                    out = {
+                        "symbol": symbol,
+                        "interval": interval,
+                        "regime": "no-trade",
+                        "decision": {"action": "HOLD", "entry": None, "sl": None, "tp": None, "confidence": 0, "risk_level": risk_level},
+                        "reason": f"Volatility gate {band} ({reason_code}): ATR%={round(bands['atr_now'], 3)} "
+                                  f"vs p10={round(bands['p10'],3)} p95={round(bands.get('p95') or 0,3)}.",
+                        "volatility": vol_meta,
+                    }
+                    return _ok(out)
+            # (si pas de bands disponibles: on continue sans gating)
+
+        # ---------------- Régime (conserve tes bornes globales) ----------
         regime = _regime_from_df(ltf, htf)
         if regime == "no-trade":
             out = {
@@ -845,14 +1005,14 @@ def intraday_decision(
                 "interval": interval,
                 "regime": regime,
                 "decision": {"action": "HOLD", "entry": None, "sl": None, "tp": None, "confidence": 0, "risk_level": risk_level},
-                "reason": "Régime no-trade (ATR% extrême ou trop faible)."
+                "reason": "Régime no-trade (ATR% extrême ou trop faible).",
+                "volatility": vol_meta,
             }
             return _ok(out)
 
+        # ---------------- Score / Confluence -----------------------------
         score = _directional_score(last_ltf)
         conf = _confidence(last_ltf, score)
-
-        # Confluence HTF: interdit contre-tendance
         ltf_up = (last_ltf.get("EMA_Fast") or 0) >= (last_ltf.get("EMA_Slow") or 0)
         htf_up = (last_htf.get("EMA_Fast") or 0) >= (last_htf.get("EMA_Slow") or 0)
 
@@ -868,32 +1028,36 @@ def intraday_decision(
             elif score >= 2 and htf_up:
                 action = "BUY"
 
+        # Si on est “au bord” (band HIGH) et require_htf_on_edges, impose confluence HTF stricte
+        if vol_enabled and vol_meta and vol_meta["band"] == "HIGH" and require_htf_on_edges:
+            if (action == "BUY" and not (ltf_up and htf_up)) or (action == "SELL" and not ((not ltf_up) and (not htf_up))):
+                action = "HOLD"
+
         if action == "HOLD":
             out = {
                 "symbol": symbol,
                 "interval": interval,
                 "regime": regime,
                 "decision": {"action": "HOLD", "entry": None, "sl": None, "tp": None, "confidence": conf, "risk_level": risk_level},
-                "reason": f"Score={score}, confluence HTF insuffisante pour {regime}."
+                "reason": f"Score={score}, confluence HTF insuffisante pour {regime}.",
+                "volatility": vol_meta,
             }
             return _ok(out)
 
         # ========= Niveaux via levels_autonomous (scalping 15m + ancrage D1) =========
-        # 15m => on force horizon=scalping
         horizon = "scalping" if interval in {"5m", "15m"} else "swing"
 
-        # Récupère D1 pour ancrage (plancher SL)
         d1_raw = meta_api.get_historical_candles(symbol, "6mo", "1d")
         d1 = _df_from_ohlcv(json.loads(d1_raw)["data"] if isinstance(d1_raw, str) else d1_raw["data"])
 
-        levels_json = levels_autonomous.__wrapped__(  # appel direct de la fonction
+        levels_json = levels_autonomous.__wrapped__(
             ohlcv=json.loads(ltf.tail(300).to_json(orient="records", date_format="iso")),
             action=action,
             horizon=horizon,
             risk_level=risk_level,
             use_fib=True,
             fib_atr_mult=2.0,
-            anchor_tf="htf",  # ✅ ancre sur la HTF fournie
+            anchor_tf="htf",
             htf_ohlcv=(json.loads(d1.tail(200).to_json(orient="records", date_format="iso")) if d1 is not None else None),
         )
         levels = json.loads(levels_json)
@@ -904,8 +1068,12 @@ def intraday_decision(
         sl = lv.get("sl")
         tp = lv.get("tp")
 
-        # Position sizing (simple)
+        # Position sizing (simple) + éventuelle réduction en band HIGH
         size = _position_size(entry=lv.get("entry_ref") or last_ltf.get("Close"), sl=sl, equity=equity, risk_pct=risk_pct, cap_leverage=cap_leverage)
+        size_factor = vol_meta["size_factor"] if (vol_enabled and vol_meta) else 1.0
+        if size_factor < 1.0 and size.get("units", 0) > 0:
+            size["units"] = float(size["units"]) * float(size_factor)
+            size["size_factor_vol"] = size_factor
 
         plan_mgmt = {
             "move_be_at_R": 1.0,
@@ -921,7 +1089,8 @@ def intraday_decision(
             f"Regime={regime}, Score={score}, EMA_LTF={'up' if ltf_up else 'down'}, EMA_HTF={'up' if htf_up else 'down'}, "
             f"ATR%={round(last_ltf.get('ATR_PCT') or 0, 2)}, BBW%={round(last_ltf.get('BBW_PCT') or 0, 2)}. "
             f"Tick={round(lv['meta'].get('tick') or 0, 6)}, MinStop≈{round(lv['meta'].get('min_stop_price') or 0, 6)}, "
-            f"Buffer≈{round(lv['meta'].get('spread_buffer') or 0, 6)}, StructFloor≈{round(lv['meta'].get('struct_floor') or 0, 6)}, FibUsed={lv['meta'].get('fib_used')}"
+            f"Buffer≈{round(lv['meta'].get('spread_buffer') or 0, 6)}, StructFloor≈{round(lv['meta'].get('struct_floor') or 0, 6)}, "
+            f"FibUsed={lv['meta'].get('fib_used')}, VolBand={(vol_meta or {}).get('band', 'NA')}"
         )
 
         out = {
@@ -940,6 +1109,7 @@ def intraday_decision(
             "position": size,
             "management": plan_mgmt,
             "reason": reason,
+            "volatility": vol_meta,
         }
         return _ok(out)
     except Exception as e:
@@ -952,16 +1122,22 @@ def intraday_decision(
 
 PROMPT_TMPL = Template(r"""
 Tu es **Senior Quant-Trader**.
-But : produire **une décision exploitable** (BUY/SELL/HOLD) et des **niveaux robustes** (entry/sl/tp) pour $symbol en te basant **uniquement** sur les outils listés. Aucune autre source.
+But : produire **une décision exploitable** (BUY/SELL/HOLD) et des **niveaux robustes** (entry/sl/tp) pour $symbol en te basant **uniquement** sur les outils listés.
 
 ### OUTILS (dans l'ordre)
-1) get_historical_candles("$symbol", "$period", "$interval", compact=True) → renvoie {cache_key, count}
-2) compute_indicators(cache_key="<la cache_key reçue>")   → Extraire **strictement la dernière ligne** (Close, EMA_Fast/Slow, RSI, MACD_Line/Signal, BB_Mid, BB_Upper/Lower, ATR, ATR_PCT, BBW_PCT, TickSize_Guess, Digits_Guess, MinStopPrice_Fallback).
-3) levels_autonomous(cache_key="<la même cache_key>", action, horizon="$horizon", risk_level="$risk_level", use_fib=True, fib_atr_mult=2.0)   → **uniquement si action ≠ HOLD**.
+1) get_historical_candles("$symbol", "$period", "$interval", compact=True) → {cache_key, count}
+2) compute_indicators(cache_key="<cache_key>") → dernière ligne (Close, EMA_Fast/Slow, RSI, MACD_Line/Signal, BB_Mid, BB_Upper/Lower, ATR, ATR_PCT, BBW_PCT, TickSize_Guess, Digits_Guess, MinStopPrice_Fallback).
+3) volatility_bands(cache_key="<cache_key>", lookback_days=30, low_pct=10, high_pct=90, extreme_pct=95, size_high=0.5)
+   → **OBLIGATOIRE** : renvoie { atr_pct_now, p10, p90, p95, band, size_factor, reason }.
+4) levels_autonomous(cache_key="<cache_key>", action, horizon="$horizon", risk_level="$risk_level", use_fib=True, fib_atr_mult=2.0) **uniquement si action ≠ HOLD**.
+
+### RÈGLES VOLATILITÉ
+- Si band ∈ {LOW, EXTREME} → action="HOLD" (raison = reason du tool).
+- Si band == HIGH → tu peux conserver l'action mais **note** size_factor (réduction de taille) dans la sortie.
 
 ### RÉGIME
 - **no-trade** si ATR_PCT > 5% ou < 0.3%.
-- **trend** si BBW_PCT ≥ 6% et EMA_Fast/SLOW alignées avec la TF au-dessus (ex: 1H ou D1).
+- **trend** si BBW_PCT ≥ 6% et EMAs alignées avec la TF au-dessus (ex: 1H ou D1).
 - sinon **range**.
 
 ### DÉCISION
@@ -999,7 +1175,16 @@ BUY si score ≥ +2 **et** confluence avec la TF supérieure; SELL si score ≤ 
     "risk_level": "$risk_level"
   },
   "reason": "<résumé concis en FR>",
-  "regime": "<trend|range|no-trade>"
+  "regime": "<trend|range|no-trade>",
+  "volatility": {
+    "atr_pct_now": <number>,
+    "p10": <number>,
+    "p90": <number>,
+    "p95": <number|null>,
+    "band": "<LOW|NORMAL|HIGH|EXTREME>",
+    "size_factor": <number>,
+    "reason": "<ATR_OK|ATR_HIGH_SIZE_DOWN|ATR_GATE_LOW|ATR_GATE_HIGH>"
+  }
 }
 """)
 

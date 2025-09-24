@@ -34,6 +34,8 @@
   },
   "scheduler": {
     "enabled": true,
+    "run_on_start": false,
+    "cronTrigger":"0,15,30,45",
     "interval_minutes": 15,
     "start_time": "08:00",
     "end_time": "17:00",
