@@ -1,0 +1,48 @@
+{
+  
+"symbols": [
+    { "symbol": "EURAUD.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
+    { "symbol": "EURCAD.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
+    { "symbol": "EURCHF.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
+    { "symbol": "EURGBP.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
+    { "symbol": "EURJPY.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.1, "min_confidence": 60 },
+    { "symbol": "EURNZD.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.1, "min_confidence": 60 },
+    { "symbol": "EURPLN.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.10, "min_confidence": 60 },
+    { "symbol": "EURSEK.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.10, "min_confidence": 60 },
+    { "symbol": "EURTRY.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.10, "min_confidence": 60 },
+    { "symbol": "EURUSD.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
+    
+    { "symbol": "USDCAD.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
+    { "symbol": "USDCHF.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
+    { "symbol": "GBPUSD.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
+    { "symbol": "USDJPY.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.1, "min_confidence": 60 },
+    { "symbol": "NZDUSD.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.1, "min_confidence": 60 },
+    { "symbol": "USDPLN.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.10, "min_confidence": 60 },
+    { "symbol": "USDSEK.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.10, "min_confidence": 60 },
+    { "symbol": "USDTRY.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.10, "min_confidence": 60 }
+
+  ]
+,
+  "global_settings": {
+    "honor_hold": false,
+    "dry_run": false,
+    "news_top_n": 10,
+    "include_columns": "Open,High,Low,Close,Volume",
+    "max_concurrent_symbols": 20,
+    "retry_attempts": 3,
+    "retry_delay": 5
+  },
+  "scheduler": {
+    "enabled": true,
+    "interval_minutes": 15,
+    "start_time": "08:00",
+    "end_time": "17:00",
+    "timezone": "Europe/Paris"
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "trading_agent.log",
+    "max_size": "10MB",
+    "backup_count": 5
+  }
+}
