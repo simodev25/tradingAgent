@@ -17,13 +17,13 @@ sys.path.append(os.path.abspath(os.path.join(
             os.path.dirname(__file__), '../data_fetch/')))
 import yf_api as yf_api
 
-mcp = FastMCP("News Analysis MCP Server", log_level="DEBUG")
+mcp = FastMCP("News Analysis MCP Server", log_level="INFO")
 
 # -------------------------------
 # Logging: STDERR only (safe for stdio transport)
 # -------------------------------
 logger.remove()
-logger.add(sys.stderr, level="DEBUG")
+logger.add(sys.stderr, level="INFO")
 
 # -------------------------------
 # FinBERT sentiment pipeline
@@ -32,6 +32,7 @@ model_name = "ProsusAI/finbert"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSequenceClassification.from_pretrained(model_name)
 sentiment_analyzer = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
+
 
 # -------------------------------
 # HTTP session with retries

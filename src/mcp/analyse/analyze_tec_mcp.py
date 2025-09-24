@@ -1,3 +1,4 @@
+
 import json
 from typing import Annotated, Any, Dict, List, Optional, Tuple
 from datetime import datetime
@@ -10,16 +11,141 @@ import pandas as pd
 from loguru import logger
 from pydantic import Field
 from mcp.server.fastmcp import FastMCP
+from dotenv import load_dotenv
+load_dotenv()
+
+# ================================================================
+# --------------------- ENV helpers & CONFIG ---------------------
+# ================================================================
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        v = os.getenv(name, None)
+        return int(v) if v is not None else default
+    except Exception:
+        return default
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        v = os.getenv(name, None)
+        return float(v) if v is not None else default
+    except Exception:
+        return default
+
+def _env_bool(name: str, default: bool) -> bool:
+    v = os.getenv(name, None)
+    if v is None:
+        return default
+    return str(v).strip().lower() in {"1","true","yes","y","on"}
+
+def _env_json(name: str, default: dict) -> dict:
+    v = os.getenv(name, None)
+    if not v:
+        return default
+    try:
+        parsed = json.loads(v)
+        return parsed if isinstance(parsed, dict) else default
+    except Exception:
+        return default
+
+CONFIG = {
+    # ===== Indicateurs =====
+    "RSI_LEN":              _env_int("TA_RSI_LEN", 9),
+    "EMA_FAST":             _env_int("TA_EMA_FAST", 8),
+    "EMA_SLOW":             _env_int("TA_EMA_SLOW", 21),
+    "MACD_SIGNAL":          _env_int("TA_MACD_SIGNAL", 7),
+    "ATR_LEN":              _env_int("TA_ATR_LEN", 10),
+    "BB_LEN":               _env_int("TA_BB_LEN", 14),
+    "BB_MULT":              _env_float("TA_BB_MULT", 1.8),
+
+    # Fallback min stop (compute_indicators_df / plan_raw)
+    "IND_MIN_STOP_TICKS_BASE": _env_int("IND_MIN_STOP_TICKS_BASE", 200),
+    "IND_MINSTOP_ATR_FRAC":    _env_float("IND_MINSTOP_ATR_FRAC", 0.15),
+
+    # ===== Volatility bands (percentiles) =====
+    "VOL_ENABLED":          _env_bool("VOL_ENABLED", True),
+    "VOL_LOOKBACK_DAYS":    _env_int("VOL_LOOKBACK_DAYS", 40),
+    "VOL_LOW_PCT":          _env_int("VOL_LOW_PCT", 5),
+    "VOL_HIGH_PCT":         _env_int("VOL_HIGH_PCT", 92),
+    "VOL_EXTREME_PCT":      _env_int("VOL_EXTREME_PCT", 98),
+    "VOL_SIZE_HIGH":        _env_float("VOL_SIZE_HIGH", 0.9),
+    "VOL_MIN_SAMPLES_WINDOW":   _env_int("VOL_MIN_SAMPLES_WINDOW", 50),
+    "VOL_MIN_SAMPLES_FALLBACK": _env_int("VOL_MIN_SAMPLES_FALLBACK", 20),
+    "VOL_FALLBACK_TAIL":        _env_int("VOL_FALLBACK_TAIL", 2000),
+
+    # ===== Régime =====
+    "REGIME_ATR_HIGH":      _env_float("REGIME_ATR_HIGH", 0.02),    # 2%
+    "REGIME_ATR_LOW":       _env_float("REGIME_ATR_LOW", 0.00025),  # 0,025%
+    "REGIME_BBW_TREND":     _env_float("REGIME_BBW_TREND", 4.2),
+    "REGIME_SQUEEZE_BBW":   _env_float("REGIME_SQUEEZE_BBW", 2.6),
+    "TREND_ONLY":           _env_bool("TREND_ONLY", False),
+
+    # ===== Scoring / décision =====
+    "DEC_RSI_POS":          _env_int("DEC_RSI_POS", 53),
+    "DEC_RSI_NEG":          _env_int("DEC_RSI_NEG", 47),
+    "SCORE_W_EMA":          _env_float("SCORE_W_EMA", 1.0),
+    "SCORE_W_MACD":         _env_float("SCORE_W_MACD", 1.0),
+    "SCORE_W_RSI":          _env_float("SCORE_W_RSI", 1.0),
+    "SCORE_W_BBPOS":        _env_float("SCORE_W_BBPOS", 1.0),
+    "DEC_TREND_BUY_SCORE":  _env_int("DEC_TREND_BUY_SCORE", 1),
+    "DEC_TREND_SELL_SCORE": _env_int("DEC_TREND_SELL_SCORE", -1),
+    "DEC_RANGE_BUY_SCORE":  _env_int("DEC_RANGE_BUY_SCORE", 1),
+    "DEC_RANGE_SELL_SCORE": _env_int("DEC_RANGE_SELL_SCORE", -1),
+    "REQUIRE_HTF_ON_EDGES": _env_bool("REQUIRE_HTF_ON_EDGES", False),
+
+    # Confiance
+    "CONF_DAMP_START":      _env_float("CONF_DAMP_START", 0.02),  # à partir de 2% ATR_PCT
+    "CONF_DAMP_RANGE":      _env_float("CONF_DAMP_RANGE", 0.05),  # pendant 5% d'amplitude
+    "CONF_DAMP_CAP":        _env_float("CONF_DAMP_CAP", 0.4),     # clamp à 40%
+
+    # ===== Periods / TF (data fetch) =====
+    "LTF_PERIOD_5M":        _env_int("LTF_PERIOD_5M", 5),   # jours
+    "LTF_PERIOD_15M":       _env_int("LTF_PERIOD_15M", 30), # jours (≈1mo)
+    "HTF_PERIOD_DAYS":      _env_int("HTF_PERIOD_DAYS", 30),
+    "HTF_INTERVAL":         os.getenv("HTF_INTERVAL", "1h"),
+    "D1_PERIOD_MONTHS":     _env_int("D1_PERIOD_MONTHS", 6),
+
+    # ===== Levels / stops =====
+    "LEVELS_MIN_ATR_FRACTION": _env_float("LEVELS_MIN_ATR_FRACTION", 0.06),
+
+    # ===== Profils =====
+    "PROFILES": {
+        "scalping": {"rr_target": 1.45, "sl_atr_mult": 0.9, "tp_atr_mult": 1.7, "min_ticks": 60,  "spread_frac": 0.05},
+        "daytrade": {"rr_target": 1.9,  "sl_atr_mult": 1.1, "tp_atr_mult": 2.3, "min_ticks": 140, "spread_frac": 0.05},
+        "swing":    {"rr_target": 2.1,  "sl_atr_mult": 1.2, "tp_atr_mult": 2.5, "min_ticks": 200, "spread_frac": 0.10},
+    },
+
+    # Overrides optionnels (JSON) pour PROFILES
+    "PROFILE_OVERRIDES": _env_json("PROFILE_OVERRIDES", {}),
+
+    # ===== Management par défaut =====
+    "MANAGE_MOVE_BE_AT_R":   _env_float("MANAGE_MOVE_BE_AT_R", 1.0),
+    "MANAGE_PARTIAL_AT_R":   _env_float("MANAGE_PARTIAL_AT_R", 1.5),
+    "MANAGE_PARTIAL_FRAC":   _env_float("MANAGE_PARTIAL_FRAC", 0.5),
+    "MANAGE_TRAIL_AT_R":     _env_float("MANAGE_TRAIL_AT_R", 2.0),
+    "MANAGE_TRAIL_TYPE":     os.getenv("MANAGE_TRAIL_TYPE", "ATR"),
+    "MANAGE_TRAIL_LEN":      _env_int("MANAGE_TRAIL_LEN", 14),
+    "MANAGE_TIME_STOP_BARS": _env_int("MANAGE_TIME_STOP_BARS", 6),
+}
+
+# Merge overrides propres sur les profils
+for k, v in CONFIG["PROFILE_OVERRIDES"].items():
+    if k in CONFIG["PROFILES"] and isinstance(v, dict):
+        CONFIG["PROFILES"][k].update(v)
+
+# ================================================================
+# --------------------- MCP bootstrap / logging ------------------
+# ================================================================
 
 # Import meta_api
 sys.path.append(os.path.abspath(os.path.join(
     os.path.dirname(__file__), '../data_fetch/')))
 import meta_api as meta_api
 
-mcp = FastMCP("Trading Analysis MCP Server", log_level="DEBUG")
+mcp = FastMCP("Trading Analysis MCP Server", log_level="INFO")
 
 logger.remove()
-logger.add(sys.stderr, level="DEBUG")
+logger.add(sys.stderr, level="INFO")
 
 # ================================================================
 # --------------------- In-memory candles cache ------------------
@@ -27,10 +153,8 @@ logger.add(sys.stderr, level="DEBUG")
 
 CANDLE_CACHE: Dict[str, List[Dict[str, Any]]] = {}
 
-
 def _make_cache_key(symbol: str, period: str, interval: str) -> str:
     return f"{symbol}|{period}|{interval}".lower()
-
 
 # ================================================================
 # --------------------- Helpers / Core Utils ---------------------
@@ -39,16 +163,13 @@ def _make_cache_key(symbol: str, period: str, interval: str) -> str:
 def _ok(payload: Any) -> str:
     return json.dumps({"ok": True, "data": payload}, ensure_ascii=False)
 
-
 def _err(msg: str, **extra) -> str:
     logger.error(f"[MCP:ANALYSIS] {msg} | extra={extra}")
     return json.dumps({"ok": False, "error": msg, "extra": extra}, ensure_ascii=False)
 
-
 def _assert_pos_int(name: str, value: int) -> None:
     if not isinstance(value, int) or value <= 0:
         raise ValueError(f"{name} must be a positive integer")
-
 
 def _assert_pos_float(name: str, value: float) -> None:
     try:
@@ -57,7 +178,6 @@ def _assert_pos_float(name: str, value: float) -> None:
         raise ValueError(f"{name} must be a positive float")
     if v <= 0:
         raise ValueError(f"{name} must be > 0")
-
 
 def _round_to_tick(value: float, tick_size: Optional[float], ndigits: int = 6) -> Optional[float]:
     """Arrondit à la taille de tick si fournie; sinon arrondi décimal standard (Decimal)."""
@@ -72,7 +192,6 @@ def _round_to_tick(value: float, tick_size: Optional[float], ndigits: int = 6) -
         return float(v)
     return float(Decimal(str(value)).quantize(Decimal(f"1e-{ndigits}"), rounding=ROUND_HALF_UP))
 
-
 # ================================================================
 # ------------------------ OHLCV ingestion -----------------------
 # ================================================================
@@ -81,7 +200,6 @@ _DEF_DATE_CAND_COLS = (
     "datetime", "date", "timestamp", "time", "timestamp_ms", "ts",
     "t", "open_time", "bar_time", "bar_ts", "bar_index", "index"
 )
-
 
 def _infer_epoch_unit(series: pd.Series) -> Optional[str]:
     """Détecte s/ms/us/ns pour un epoch numérique par longueur; fallback par ordre de grandeur."""
@@ -114,7 +232,6 @@ def _infer_epoch_unit(series: pd.Series) -> Optional[str]:
         return "s"
     return None
 
-
 def _normalize_naive_utc(dt: pd.Series) -> pd.Series:
     """Toujours retourner des datetimes naïves supposées UTC."""
     try:
@@ -127,7 +244,6 @@ def _normalize_naive_utc(dt: pd.Series) -> pd.Series:
         return parsed.dt.tz_localize(None)
     except Exception:
         return pd.to_datetime(dt, errors="coerce", utc=True).dt.tz_localize(None)
-
 
 def _df_from_ohlcv(ohlcv: Any) -> Optional[pd.DataFrame]:
     """Construit un DataFrame propre depuis une liste d'objets OHLCV.
@@ -210,14 +326,13 @@ def _df_from_ohlcv(ohlcv: Any) -> Optional[pd.DataFrame]:
     # 4) Nettoyage & tri
     before = len(df)
     df = (
-        df.dropna(subset=["Date", "Open", "High", "Low", "Close"])
-          .drop_duplicates(subset=["Date"])
-          .sort_values("Date")
+        df.dropna(subset=["Date", "Open", "High", "Low", "Close"])\
+          .drop_duplicates(subset=["Date"])\
+          .sort_values("Date")\
           .reset_index(drop=True)
     )
     logger.debug(f"[MCP:ANALYSIS] OHLCV parsed: {before} ➜ {len(df)} rows | synthetic_date={synthetic_date}")
     return df
-
 
 # ================================================================
 # -------------------- Indicator primitives ----------------------
@@ -226,7 +341,6 @@ def _df_from_ohlcv(ohlcv: Any) -> Optional[pd.DataFrame]:
 def ema(series: pd.Series, length: int) -> pd.Series:
     _assert_pos_int("ema length", length)
     return series.ewm(span=length, adjust=False).mean()
-
 
 def rsi(close: pd.Series, length: int = 14) -> pd.Series:
     _assert_pos_int("rsi length", length)
@@ -241,7 +355,6 @@ def rsi(close: pd.Series, length: int = 14) -> pd.Series:
     rsi_val = rsi_val.fillna(50.0)
     return rsi_val.clip(lower=0.0, upper=100.0).astype(float)
 
-
 def macd(close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> Tuple[pd.Series, pd.Series, pd.Series]:
     _assert_pos_int("macd fast", fast)
     _assert_pos_int("macd slow", slow)
@@ -253,7 +366,6 @@ def macd(close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> T
     sig = ema(line, signal)
     return line, sig, line - sig
 
-
 def atr(df: pd.DataFrame, length: int = 14) -> pd.Series:
     _assert_pos_int("atr length", length)
     high, low, close = df["High"], df["Low"], df["Close"]
@@ -262,7 +374,6 @@ def atr(df: pd.DataFrame, length: int = 14) -> pd.Series:
     alpha = 1.0 / float(length)
     return tr.ewm(alpha=alpha, adjust=False).mean()
 
-
 def bbands(close: pd.Series, length: int = 20, mult: float = 2.0) -> Tuple[pd.Series, pd.Series, pd.Series]:
     _assert_pos_int("bb length", length)
     _assert_pos_float("bb mult", mult)
@@ -270,14 +381,12 @@ def bbands(close: pd.Series, length: int = 20, mult: float = 2.0) -> Tuple[pd.Se
     sd = close.rolling(length, min_periods=length).std(ddof=0)
     return ma - mult * sd, ma, ma + mult * sd
 
-
 # ---------------------- Market helpers --------------------------
 
 def _infer_digits_from_prices(prices: pd.Series) -> int:
     s = prices.dropna().astype(str)
     dec_lens = s[s.str.contains(r"\.")].str.split(".", n=1).str[1].str.len()
     return int(dec_lens.max()) if not dec_lens.empty else 0
-
 
 def _infer_tick_from_prices(prices: pd.Series, max_digits: int) -> float:
     vals = (prices.dropna().round(max_digits).astype(float) * (10 ** max_digits)).round().astype("Int64").dropna().astype(int)
@@ -297,7 +406,6 @@ def _infer_tick_from_prices(prices: pd.Series, max_digits: int) -> float:
     if tick_size <= 0:
         tick_size = float(Decimal(1).scaleb(-max_digits))
     return float(tick_size)
-
 
 # ---------------------- Fibonacci utils -------------------------
 
@@ -329,7 +437,6 @@ def _zigzag_swings(df: pd.DataFrame, atr_mult: float = 2.0, min_bars: int = 5) -
                 filt[-1] = (idx, p, t)
     return filt
 
-
 def _fib_levels(high: float, low: float) -> Dict[str, Dict[str, float]]:
     rng = high - low
     retr = {
@@ -351,21 +458,29 @@ def _fib_levels(high: float, low: float) -> Dict[str, Dict[str, float]]:
     }
     return {"retr": retr, "ext_up": ext_up, "ext_down": ext_down}
 
-
 # ================================================================
 # ---------------- Indicators & market info DF -------------------
 # ================================================================
 
 def _compute_indicators_df(
     df: pd.DataFrame,
-    rsi_len: int = 14,
-    ema_fast: int = 12,
-    ema_slow: int = 26,
-    macd_signal: int = 9,
-    atr_len: int = 14,
-    bb_len: int = 20,
-    bb_mult: float = 2.0,
+    rsi_len: Optional[int] = None,
+    ema_fast: Optional[int] = None,
+    ema_slow: Optional[int] = None,
+    macd_signal: Optional[int] = None,
+    atr_len: Optional[int] = None,
+    bb_len: Optional[int] = None,
+    bb_mult: Optional[float] = None,
 ) -> pd.DataFrame:
+    # Fallback sur CONFIG si None
+    rsi_len     = CONFIG["RSI_LEN"]     if rsi_len     is None else rsi_len
+    ema_fast    = CONFIG["EMA_FAST"]    if ema_fast    is None else ema_fast
+    ema_slow    = CONFIG["EMA_SLOW"]    if ema_slow    is None else ema_slow
+    macd_signal = CONFIG["MACD_SIGNAL"] if macd_signal is None else macd_signal
+    atr_len     = CONFIG["ATR_LEN"]     if atr_len     is None else atr_len
+    bb_len      = CONFIG["BB_LEN"]      if bb_len      is None else bb_len
+    bb_mult     = CONFIG["BB_MULT"]     if bb_mult     is None else bb_mult
+
     df = df.copy()
     df["EMA_Fast"], df["EMA_Slow"] = ema(df["Close"], ema_fast), ema(df["Close"], ema_slow)
     df["RSI"] = rsi(df["Close"], rsi_len)
@@ -383,13 +498,14 @@ def _compute_indicators_df(
     df["Digits_Guess"] = digits_guess
     df["TickSize_Guess"] = float(tick_guess)
 
-    df["ATR_PCT"] = np.where(df["Close"] > 0, (df["ATR"] / df["Close"]) * 100.0, np.nan)
+    # ATR_PCT en fraction (0.05 = 5 %)
+    df["ATR_PCT"] = np.where(df["Close"] > 0, (df["ATR"] / df["Close"]), np.nan)
 
     last_atr = float(df["ATR"].iloc[-1]) if len(df) else None
     point = float(tick_guess if tick_guess else (10 ** (-(digits_guess if digits_guess else 3))))
-    min_stop_ticks = 200
+    min_stop_ticks = CONFIG["IND_MIN_STOP_TICKS_BASE"]
     if last_atr and point > 0:
-        min_stop_ticks = max(min_stop_ticks, int(math.ceil(0.15 * last_atr / point)))
+        min_stop_ticks = max(min_stop_ticks, int(math.ceil(CONFIG["IND_MINSTOP_ATR_FRAC"] * last_atr / point)))
     min_stop_price_fallback = float(min_stop_ticks * point)
     df["MinStopPrice_Fallback"] = float(min_stop_price_fallback)
 
@@ -398,10 +514,8 @@ def _compute_indicators_df(
 
     return df
 
-
 def _last_row(df: pd.DataFrame) -> Dict[str, Any]:
     return json.loads(df.tail(1).replace({np.nan: None}).to_json(orient="records", date_format="iso"))[0]
-
 
 # ================================================================
 # ----------------------- MCP Tools (base) -----------------------
@@ -412,16 +526,17 @@ def compute_indicators(
     ohlcv: Annotated[Optional[List[Dict[str, Any]]], Field(description="OHLCV records (optional si cache_key)")] = None,
     cache_key: Annotated[Optional[str], Field(description="Clé de cache renvoyée par get_historical_candles(compact=True)")] = None,
     tail: int = 200,
-    rsi_len: int = 14,
-    ema_fast: int = 12,
-    ema_slow: int = 26,
-    macd_signal: int = 9,
-    atr_len: int = 14,
-    bb_len: int = 20,
-    bb_mult: float = 2.0,
+    rsi_len: Optional[int] = None,
+    ema_fast: Optional[int] = None,
+    ema_slow: Optional[int] = None,
+    macd_signal: Optional[int] = None,
+    atr_len: Optional[int] = None,
+    bb_len: Optional[int] = None,
+    bb_mult: Optional[float] = None,
     last_only: bool = True,
 ) -> str:
-    """Calcule indicateurs + infos marché dérivées de l'OHLCV (TickSize/Digits/MinStop/ATR%/BBW%)."""
+    """Calcule indicateurs + infos marché dérivées de l'OHLCV.
+       Note: ATR_PCT est une fraction (0.05 = 5 %), BBW_PCT est en pourcentage."""
     try:
         # Récup OHLCV
         src = None
@@ -449,6 +564,130 @@ def compute_indicators(
     except Exception as e:
         return _err("compute_indicators failed", exc=str(e))
 
+# ================================================================
+# --------------- Volatility (ATR% percentile) helpers -----------
+# ================================================================
+
+def _atr_pct_bands_from_df(
+    df: pd.DataFrame,
+    lookback_days: int = 30,
+    low_pct: int = 10,
+    high_pct: int = 90,
+    extreme_pct: int = 95,
+) -> Optional[Dict[str, float]]:
+    """Calcule p10/p90/p95 de ATR_PCT (fraction) sur la fenêtre 'lookback_days' (fallback: dernières N barres)."""
+    if df is None or "Date" not in df.columns or "ATR_PCT" not in df.columns or df.empty:
+        return None
+    try:
+        cutoff = df["Date"].max() - pd.Timedelta(days=int(lookback_days))
+        s = df.loc[df["Date"] >= cutoff, "ATR_PCT"].dropna()
+        if s.size < CONFIG["VOL_MIN_SAMPLES_WINDOW"]:  # fallback si peu d'historique dans la fenêtre
+            s = df["ATR_PCT"].dropna().tail(CONFIG["VOL_FALLBACK_TAIL"])
+        if s.size < CONFIG["VOL_MIN_SAMPLES_FALLBACK"]:
+            return None
+        p10 = float(np.percentile(s, low_pct))
+        p90 = float(np.percentile(s, high_pct))
+        p95 = float(np.percentile(s, extreme_pct)) if extreme_pct else None
+        atr_now = float(df["ATR_PCT"].iloc[-1])
+        return {"atr_now": atr_now, "p10": p10, "p90": p90, "p95": p95}
+    except Exception:
+        return None
+
+def _classify_vol_band(
+    atr_now: float,
+    p10: float,
+    p90: float,
+    p95: Optional[float] = None,
+    size_high: float = 0.5,
+) -> Dict[str, Any]:
+    """Classe LOW/NORMAL/HIGH/EXTREME + size_factor & reason. (Inputs en fraction)"""
+    if atr_now is None or not np.isfinite(atr_now):
+        return {"band": "NORMAL", "size_factor": 1.0, "reason": "ATR_NA"}
+    if p10 is not None and atr_now < p10:
+        return {"band": "LOW", "size_factor": 0.0, "reason": "ATR_GATE_LOW"}
+    if p95 is not None and atr_now > p95:
+        return {"band": "EXTREME", "size_factor": 0.0, "reason": "ATR_GATE_HIGH"}
+    if p90 is not None and atr_now > p90:
+        return {"band": "HIGH", "size_factor": float(size_high), "reason": "ATR_HIGH_SIZE_DOWN"}
+    return {"band": "NORMAL", "size_factor": 1.0, "reason": "ATR_OK"}
+
+def _volatility_gate(
+    atr_now: float,
+    p10: float,
+    p90: float,
+    p95: Optional[float] = None,
+    size_high: float = 0.5,
+) -> Tuple[bool, str, float, str]:
+    """
+    Renvoie: allowed, band ('LOW'|'NORMAL'|'HIGH'|'EXTREME'), size_factor, reason_code
+    """
+    cls = _classify_vol_band(atr_now, p10, p90, p95, size_high)
+    band = cls["band"]
+    if band in ("LOW", "EXTREME"):
+        return False, band, cls["size_factor"], cls["reason"]
+    return True, band, cls["size_factor"], cls["reason"]
+
+# ================================================================
+# -------------------- Volatility Bands Tool ---------------------
+# ================================================================
+
+@mcp.tool()
+def volatility_bands(
+    ohlcv: Annotated[Optional[List[Dict[str, Any]]], Field(description="OHLCV (optionnel si cache_key)")] = None,
+    cache_key: Annotated[Optional[str], Field(description="clé de cache de get_historical_candles")] = None,
+    lookback_days: Optional[int] = None,
+    low_pct: Optional[int] = None,
+    high_pct: Optional[int] = None,
+    extreme_pct: Optional[int] = None,
+    size_high: Optional[float] = None,
+) -> str:
+    """Retourne ATR_PCT_now + p10/p90/p95 + band + size_factor + reason (par symbole/TF)."""
+    try:
+        # Source
+        src = None
+        if cache_key:
+            src = CANDLE_CACHE.get(cache_key)
+            if src is None:
+                return _err("cache_key not found", cache_key=cache_key)
+        elif ohlcv is not None:
+            src = ohlcv
+        else:
+            return _err("Missing ohlcv or cache_key")
+
+        # Defaults via CONFIG
+        lookback_days = CONFIG["VOL_LOOKBACK_DAYS"] if lookback_days is None else lookback_days
+        low_pct       = CONFIG["VOL_LOW_PCT"]       if low_pct       is None else low_pct
+        high_pct      = CONFIG["VOL_HIGH_PCT"]      if high_pct      is None else high_pct
+        extreme_pct   = CONFIG["VOL_EXTREME_PCT"]   if extreme_pct   is None else extreme_pct
+        size_high     = CONFIG["VOL_SIZE_HIGH"]     if size_high     is None else size_high
+
+        # DataFrame + indicateurs (ATR_PCT)
+        df = _df_from_ohlcv(src)
+        if df is None or df.empty:
+            return _err("Invalid OHLCV")
+        df = _compute_indicators_df(df)
+
+        bands = _atr_pct_bands_from_df(df, lookback_days, low_pct, high_pct, extreme_pct)
+        if bands is None:
+            return _err("Not enough data to compute percentiles", rows=len(df))
+
+        cls = _classify_vol_band(bands["atr_now"], bands["p10"], bands["p90"], bands.get("p95"), size_high=size_high)
+        payload = {
+            "atr_pct_now": bands["atr_now"],
+            "p10": bands["p10"],
+            "p90": bands["p90"],
+            "p95": bands.get("p95"),
+            "band": cls["band"],
+            "size_factor": cls["size_factor"],
+            "reason": cls["reason"],
+        }
+        return _ok(payload)
+    except Exception as e:
+        return _err("volatility_bands failed", exc=str(e))
+
+# ================================================================
+# -------------------- Other Base Tools --------------------------
+# ================================================================
 
 @mcp.tool()
 def plan_raw(
@@ -456,44 +695,77 @@ def plan_raw(
     risk_level: str = "medium",
     direction: str = "auto",
     tick_size: Optional[float] = None,
+    horizon: str = "scalping",
 ) -> str:
-    """Plan ATR simple, harmonisé avec contraintes (min stop, buffer, RR)."""
+    """
+    Plan ATR simple, harmonisé avec les profils (min_ticks, spread_frac) et les contraintes (min stop, buffer, RR).
+    - Utilise le profil choisi via `horizon` ("scalping" | "daytrade" | "swing") pour dimensionner les minima.
+    - Garde un plancher dynamique via IND_MINSTOP_ATR_FRAC * ATR.
+    - Si `direction="auto"`, déduit long/short à partir d'EMA/RSI/MACD et fallback EMA.
+    - Retourne: entry (market), sl, tp, atr, side, meta (tick, min_stop_price, spread_buffer).
+    """
     try:
+        # 1) Parse OHLCV -> DF + indicateurs
         df = _df_from_ohlcv(ohlcv)
-        if df is None:
+        if df is None or df.empty:
             return _err("Invalid OHLCV")
+
         df = _compute_indicators_df(df)
         last = _last_row(df)
         atr_val, close = last.get("ATR"), last.get("Close")
-        if atr_val is None or close is None:
+        if atr_val is None or close is None or not np.isfinite(atr_val) or not np.isfinite(close):
             return _err("ATR/Close missing")
+
+        # 2) Détermination du sens (si auto)
         side = direction.lower()
         if side not in {"long", "short"}:
-            ema_fast = last.get("EMA_Fast") or 0.0
-            ema_slow = last.get("EMA_Slow") or 0.0
-            rsi_v = last.get("RSI") or 50.0
-            macd_line = last.get("MACD_Line") or 0.0
-            macd_sig  = last.get("MACD_Signal") or 0.0
-            bullish_bias = (ema_fast >= ema_slow) and (rsi_v >= 50 or macd_line >= macd_sig)
-            bearish_bias = (ema_fast <  ema_slow) and (rsi_v <= 50 or macd_line <= macd_sig)
-            side = "long" if bullish_bias and not bearish_bias else ("short" if bearish_bias and not bullish_bias else ("long" if ema_fast >= ema_slow else "short"))
+            ema_fast = float(last.get("EMA_Fast") or 0.0)
+            ema_slow = float(last.get("EMA_Slow") or 0.0)
+            rsi_v    = float(last.get("RSI") or 50.0)
+            macd_ln  = float(last.get("MACD_Line") or 0.0)
+            macd_sig = float(last.get("MACD_Signal") or 0.0)
 
-        # Tick & contraintes
+            bullish_bias = (ema_fast >= ema_slow) and (rsi_v >= CONFIG["DEC_RSI_POS"] or macd_ln >= macd_sig)
+            bearish_bias = (ema_fast <  ema_slow) and (rsi_v <= CONFIG["DEC_RSI_NEG"] or macd_ln <= macd_sig)
+            if bullish_bias and not bearish_bias:
+                side = "long"
+            elif bearish_bias and not bullish_bias:
+                side = "short"
+            else:
+                side = "long" if ema_fast >= ema_slow else "short"
+
+        # 3) Tick & contraintes de base (profil-aware)
         prices = pd.concat([df["Open"], df["High"], df["Low"], df["Close"]], ignore_index=True)
         digits_guess = _infer_digits_from_prices(prices)
-        tick = tick_size or _infer_tick_from_prices(prices, digits_guess) or float(Decimal(1).scaleb(-max(digits_guess, 3)))
-        point = tick
-        min_stop_ticks = 200
+        tick = tick_size or _infer_tick_from_prices(prices, digits_guess) or float(Decimal(1).scaleb(-max(digits_guess or 3, 3)))
+        point = float(tick)
+
+        # Profil (scalping/daytrade/swing)
+        prof_conf = CONFIG["PROFILES"].get(horizon.lower(), CONFIG["PROFILES"]["swing"])
+        min_stop_ticks = int(prof_conf.get("min_ticks", CONFIG["IND_MIN_STOP_TICKS_BASE"]))
+
+        # Plancher dynamique en fonction de l'ATR
         if atr_val and point > 0:
-            min_stop_ticks = max(min_stop_ticks, int(math.ceil(0.15 * atr_val / point)))
+            dyn_ticks = int(math.ceil(CONFIG["IND_MINSTOP_ATR_FRAC"] * float(atr_val) / point))
+            min_stop_ticks = max(min_stop_ticks, dyn_ticks)
+
         min_stop_price = float(min_stop_ticks * point)
-        spread_buffer = max(5 * point, 0.10 * min_stop_price)
-        req_dist = min_stop_price + spread_buffer
 
-        tp_mult = {"low": 1.5, "medium": 2.0, "high": 3.0}.get(risk_level.lower(), 2.0)
-        sl_dist = max(1.0 * atr_val, req_dist)
-        tp_dist = max(tp_mult * atr_val, 1.5 * sl_dist, req_dist)
+        # Buffer spread cohérent avec le profil (fallback 8%)
+        spread_frac = float(prof_conf.get("spread_frac", 0.08))
+        spread_buffer = max(2.0 * point, spread_frac * min_stop_price)
 
+        # Distance minimale requise de part et d'autre (plancher + buffer)
+        req_dist = float(min_stop_price + spread_buffer)
+
+        # 4) Distances SL/TP à partir de l'ATR + risk_level
+        tp_mult_map = {"low": 1.5, "medium": 2.0, "high": 3.0}
+        tp_mult = float(tp_mult_map.get(risk_level.lower(), 2.0))
+
+        sl_dist = max(1.0 * float(atr_val), req_dist)
+        tp_dist = max(tp_mult * float(atr_val), 1.5 * sl_dist, req_dist)
+
+        # 5) Niveaux (market entry)
         if side == "long":
             sl = _round_to_tick(close - sl_dist, tick)
             tp = _round_to_tick(close + tp_dist, tick)
@@ -501,13 +773,40 @@ def plan_raw(
             sl = _round_to_tick(close + sl_dist, tick)
             tp = _round_to_tick(close - tp_dist, tick)
 
+        entry = _round_to_tick(close, tick)
+
+        # 6) Validation post-arrondi (garantir req_dist de chaque côté)
+        if side == "long":
+            if not (sl is not None and tp is not None and sl <= entry - req_dist and tp >= entry + req_dist):
+                # Forcer un TP conforme si l'arrondi l'a rendu trop court
+                tp = _round_to_tick(entry + max(tp_dist, req_dist, 1.5 * sl_dist), tick)
+                if not (sl is not None and tp is not None and sl <= entry - req_dist and tp >= entry + req_dist):
+                    return _err("Constraints not satisfied after rounding (LONG)",
+                                entry=entry, sl=sl, tp=tp, req=req_dist, tick=tick)
+        else:
+            if not (sl is not None and tp is not None and sl >= entry + req_dist and tp <= entry - req_dist):
+                tp = _round_to_tick(entry - max(tp_dist, req_dist, 1.5 * sl_dist), tick)
+                if not (sl is not None and tp is not None and sl >= entry + req_dist and tp <= entry - req_dist):
+                    return _err("Constraints not satisfied after rounding (SHORT)",
+                                entry=entry, sl=sl, tp=tp, req=req_dist, tick=tick)
+
         return _ok({
-            "entry": _round_to_tick(close, tick),
-            "sl": sl, "tp": tp,
-            "atr": atr_val,
-            "risk_level": risk_level, "side": side,
-            "meta": {"tick": tick, "min_stop_price": min_stop_price, "spread_buffer": spread_buffer}
+            "entry": entry,
+            "sl": sl,
+            "tp": tp,
+            "atr": float(atr_val),
+            "risk_level": risk_level,
+            "side": side,
+            "meta": {
+                "tick": float(tick),
+                "digits_guess": int(digits_guess),
+                "min_stop_price": float(min_stop_price),
+                "spread_buffer": float(spread_buffer),
+                "req_dist": float(req_dist),
+                "horizon": horizon,
+            }
         })
+
     except Exception as e:
         return _err("plan_raw failed", exc=str(e))
 
@@ -517,11 +816,12 @@ def get_historical_candles(symbol: str, period: str = "1mo", interval: str = "1d
     """Récupération OHLCV via meta_api."""
     try:
         data = meta_api.get_historical_candles(symbol, period, interval)
-        logger.debug(f"[MCP:ANALYSIS] get_historical_candles {symbol}:{period}:{interval}")
+        logger.info(f"[MCP:ANALYSIS] get_historical_candles {symbol}:{period}:{interval}")
         if isinstance(data, str):
             data = json.loads(data)
         ohlcv = data.get("data") if isinstance(data, dict) and "data" in data else data
         if not isinstance(ohlcv, list) or not ohlcv:
+            logger.info(f"[MCP:ANALYSIS] get_historical_candles {symbol}:{period}:{data}")
             return _err("fetch returned empty data", symbol=symbol, period=period, interval=interval)
 
         cache_key = _make_cache_key(symbol, period, interval)
@@ -532,7 +832,6 @@ def get_historical_candles(symbol: str, period: str = "1mo", interval: str = "1d
         return _ok(payload)
     except Exception as e:
         return _err("fetch failed", exc=str(e), symbol=symbol, period=period, interval=interval)
-
 
 # ================================================================
 # ------- Levels engine (avec plancher HTF pour 15m) -------------
@@ -557,7 +856,7 @@ def levels_autonomous(
     - Plancher stop = max(min_ticks, 12% ATR_basis) + buffer spread
     - ATR_basis = ATR(LTF) ou ATR(HTF) si fourni (D1 conseillé pour 15m)
     - Pivot HTF (dernier creux/haut) ajoute un **plancher structurel**
-    - R/R cible adaptatif: scalping 1.5, daytrade 1.8, swing 2.0
+    - R/R cible adaptatif
     - Fibonacci optionnel pour étendre le TP si disponible
     """
     try:
@@ -586,12 +885,8 @@ def levels_autonomous(
         digits_guess = _infer_digits_from_prices(prices)
         tick = _infer_tick_from_prices(prices, digits_guess) or float(Decimal(1).scaleb(-max(digits_guess, 3)))
 
-        # Profils par horizon
-        PROFILE = {
-            "scalping": {"rr_target": 1.5, "sl_atr_mult": 0.9, "tp_atr_mult": 1.8, "min_ticks": 60,  "spread_frac": 0.06},
-            "daytrade": {"rr_target": 1.8, "sl_atr_mult": 1.0, "tp_atr_mult": 2.1, "min_ticks": 120, "spread_frac": 0.08},
-            "swing":    {"rr_target": 2.0, "sl_atr_mult": 1.2, "tp_atr_mult": 2.4, "min_ticks": 200, "spread_frac": 0.10},
-        }
+        # Profils (config)
+        PROFILE = CONFIG["PROFILES"]
         prof = PROFILE.get(horizon.lower(), PROFILE["swing"])
 
         # ATR de base (HTF si fournie)
@@ -609,11 +904,11 @@ def levels_autonomous(
                 htf_df = None  # ignore si échec
 
         # Planchers (ticks + ATR_basis) + buffer
-        min_stop_ticks = prof["min_ticks"]
+        min_stop_ticks = prof.get("min_ticks", 100)
         if atr_basis and tick > 0:
-            min_stop_ticks = max(min_stop_ticks, int(math.ceil(0.12 * atr_basis / tick)))
+            min_stop_ticks = max(min_stop_ticks, int(math.ceil(CONFIG["LEVELS_MIN_ATR_FRACTION"] * atr_basis / tick)))
         min_stop_price = float(min_stop_ticks * tick)
-        spread_buffer  = max(2 * tick, prof["spread_frac"] * min_stop_price)
+        spread_buffer  = max(2 * tick, prof.get("spread_frac", 0.08) * min_stop_price)
 
         # Plancher pivot HTF (structure)
         struct_floor = 0.0
@@ -634,9 +929,9 @@ def levels_autonomous(
                 struct_floor = 0.0
 
         # Distances de base (réactivité LTF)
-        rr_target = prof["rr_target"]
-        sl_dist0 = prof["sl_atr_mult"] * atr_ltf
-        tp_dist0 = prof["tp_atr_mult"] * atr_ltf
+        rr_target = prof.get("rr_target", 1.8)
+        sl_dist0 = prof.get("sl_atr_mult", 1.1) * atr_ltf
+        tp_dist0 = prof.get("tp_atr_mult", 2.2) * atr_ltf
 
         # Distance minimale requise
         req_dist = max(min_stop_price + spread_buffer, struct_floor)
@@ -735,54 +1030,64 @@ def levels_autonomous(
     except Exception as e:
         return _err("levels_autonomous failed", exc=str(e))
 
-
 # ================================================================
 # --------------- Strategy logic: regime & decision --------------
 # ================================================================
 
-def _directional_score(last: Dict[str, Any]) -> int:
-    score = 0
+def _directional_score(last: Dict[str, Any]) -> float:
+    score = 0.0
+    # EMA
     if (last.get("EMA_Fast") or 0) >= (last.get("EMA_Slow") or 0):
-        score += 1
+        score += CONFIG["SCORE_W_EMA"]
     else:
-        score -= 1
+        score -= CONFIG["SCORE_W_EMA"]
+    # MACD
     if (last.get("MACD_Line") or 0) >= (last.get("MACD_Signal") or 0):
-        score += 1
+        score += CONFIG["SCORE_W_MACD"]
     else:
-        score -= 1
+        score -= CONFIG["SCORE_W_MACD"]
+    # RSI
     rsi_v = last.get("RSI") or 50
-    if rsi_v >= 55:
-        score += 1
-    elif rsi_v <= 45:
-        score -= 1
+    if rsi_v >= CONFIG["DEC_RSI_POS"]:
+        score += CONFIG["SCORE_W_RSI"]
+    elif rsi_v <= CONFIG["DEC_RSI_NEG"]:
+        score -= CONFIG["SCORE_W_RSI"]
     # Position vs BB_Mid
     if (last.get("Close") or 0) >= (last.get("BB_Mid") or 0):
-        score += 1
+        score += CONFIG["SCORE_W_BBPOS"]
     else:
-        score -= 1
-    return int(score)
+        score -= CONFIG["SCORE_W_BBPOS"]
+    return float(score)
 
-
-def _confidence(last: Dict[str, Any], score_total: int) -> int:
+def _confidence(last: Dict[str, Any], score_total: float) -> int:
     atr_pct = (last.get("ATR_PCT") or 0.0)
-    damp = max(0.0, min(0.4, (atr_pct - 2.0) / 5.0))
+    damp = max(0.0, min(CONFIG["CONF_DAMP_CAP"], (atr_pct - CONFIG["CONF_DAMP_START"]) / max(CONFIG["CONF_DAMP_RANGE"], 1e-9)))
     conf = round((abs(score_total) / 4.0) * (1 - damp) * 100)
     return int(max(0, min(100, conf)))
 
-
 def _regime_from_df(df_ltf: pd.DataFrame, df_htf: pd.DataFrame) -> str:
-    """Trend si BBW% élevé **et** EMAs alignées sur HTF. Range sinon. No-trade si ATR% extrêmes."""
+    """Trend si BBW% élevé **et** EMAs alignées sur HTF. Range sinon.
+       No-trade seulement pour vol extrême haute, ou calme extrême + squeeze."""
     last_ltf = _last_row(df_ltf)
     last_htf = _last_row(df_htf)
-    atr_pct = last_ltf.get("ATR_PCT") or 0.0
-    if atr_pct > 5.0 or atr_pct < 0.3:
-        return "no-trade"
-    bbw = last_ltf.get("BBW_PCT") or 0.0
-    ema_align = (last_ltf.get("EMA_Fast") or 0) >= (last_ltf.get("EMA_Slow") or 0)
-    ema_align_htf = (last_htf.get("EMA_Fast") or 0) >= (last_htf.get("EMA_Slow") or 0)
-    trend_like = bbw >= 6.0 and (ema_align == ema_align_htf)
-    return "trend" if trend_like else "range"
 
+    atr_pct = last_ltf.get("ATR_PCT") or 0.0     # fraction (0.0008 = 0.08 %)
+    bbw     = last_ltf.get("BBW_PCT") or 0.0
+
+    # Kill-switch haut
+    if atr_pct > CONFIG["REGIME_ATR_HIGH"]:
+        return "no-trade"
+
+    # Calme extrême seulement si squeeze prononcé
+    if atr_pct < CONFIG["REGIME_ATR_LOW"] and bbw < CONFIG["REGIME_SQUEEZE_BBW"]:
+        return "no-trade"
+
+    ema_align_ltf = (last_ltf.get("EMA_Fast") or 0) >= (last_ltf.get("EMA_Slow") or 0)
+    ema_align_htf = (last_htf.get("EMA_Fast") or 0) >= (last_htf.get("EMA_Slow") or 0)
+
+    # Seuil BBW pour "trend"
+    trend_like = (bbw >= CONFIG["REGIME_BBW_TREND"]) and (ema_align_ltf == ema_align_htf)
+    return "trend" if trend_like else "range"
 
 def _fetch_and_features(symbol: str, period_ltf: str, interval_ltf: str, period_htf: str, interval_htf: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
     # LTF
@@ -794,7 +1099,6 @@ def _fetch_and_features(symbol: str, period_ltf: str, interval_ltf: str, period_
     htf = _df_from_ohlcv(json.loads(htf_raw)["data"] if isinstance(htf_raw, str) else htf_raw["data"])
     htf = _compute_indicators_df(htf)
     return ltf, htf
-
 
 def _position_size(entry: float, sl: float, equity: float, risk_pct: float, cap_leverage: float, price_mult: float = 1.0) -> Dict[str, Any]:
     """Calcule une taille générique: units = min(Risk€/|entry-sl|, equity*cap_leverage*price_mult)."""
@@ -809,7 +1113,6 @@ def _position_size(entry: float, sl: float, equity: float, risk_pct: float, cap_
     units = float(min(units_risk, notional_cap))
     return {"units": units, "risk_eur": risk_eur, "distance": dist}
 
-
 # ================================================================
 # -------------------- Intraday Decision Tool --------------------
 # ================================================================
@@ -819,54 +1122,138 @@ def intraday_decision(
     symbol: str,
     interval: str = "15m",          # "5m" ou "15m"
     equity: float = 10000.0,         # capital de référence en EUR
-    risk_pct: float = 0.005,         # 0.5% par trade (ajuste selon ta gestion)
-    cap_leverage: float = 5.0,       # plafond de notionnel ≈ levier max
+    risk_pct: float = 0.005,         # 0.5% par trade
+    cap_leverage: float = 5.0,       # plafond notionnel
     risk_level: str = "medium",
+
+    # ---- Filtre de volatilité (configurable) ----
+    vol_enabled: Optional[bool] = None,
+    lookback_days: Optional[int] = None,
+    vol_low_pct: Optional[int] = None,
+    vol_high_pct: Optional[int] = None,
+    vol_extreme_pct: Optional[int] = None,
+    vol_size_high: Optional[float] = None,
+    require_htf_on_edges: Optional[bool] = None,
+
+    # option coupe-chop
+    trend_only: Optional[bool] = None,
 ) -> str:
-    """Décision tradable (intraday) alignée Senior Quant-Trader."""
+    """Décision intraday avec filtre de volatilité dynamique (ATR_PCT percentiles) + option trend-only.
+       Note: ATR_PCT est une fraction (0.05 = 5 %) dans toute la logique."""
     try:
         interval = interval.lower()
         if interval not in {"5m", "15m"}:
             interval = "15m"
         # périodes adéquates pour avoir assez d'historique
-        period_ltf = "5d" if interval == "5m" else "1mo"
-        period_htf = "1mo"
-        interval_htf = "1h"
+        if interval == "5m":
+            period_ltf = f"{CONFIG['LTF_PERIOD_5M']}d"
+        else:
+            period_ltf = f"{CONFIG['LTF_PERIOD_15M']}d"  # ~ 1mo
+        period_htf = f"{CONFIG['HTF_PERIOD_DAYS']}d"
+        interval_htf = CONFIG["HTF_INTERVAL"]
+
+        # Defaults via CONFIG
+        vol_enabled    = CONFIG["VOL_ENABLED"]     if vol_enabled    is None else vol_enabled
+        lookback_days  = CONFIG["VOL_LOOKBACK_DAYS"] if lookback_days  is None else lookback_days
+        vol_low_pct    = CONFIG["VOL_LOW_PCT"]       if vol_low_pct    is None else vol_low_pct
+        vol_high_pct   = CONFIG["VOL_HIGH_PCT"]      if vol_high_pct   is None else vol_high_pct
+        vol_extreme_pct= CONFIG["VOL_EXTREME_PCT"]   if vol_extreme_pct is None else vol_extreme_pct
+        vol_size_high  = CONFIG["VOL_SIZE_HIGH"]     if vol_size_high  is None else vol_size_high
+        trend_only     = CONFIG["TREND_ONLY"]        if trend_only     is None else trend_only
+        require_htf_on_edges = CONFIG["REQUIRE_HTF_ON_EDGES"] if require_htf_on_edges is None else require_htf_on_edges
 
         # Feature engineering multi-TF
         ltf, htf = _fetch_and_features(symbol, period_ltf, interval, period_htf, interval_htf)
         last_ltf = _last_row(ltf)
         last_htf = _last_row(htf)
 
+        # ---------------- Volatility gating (percentiles) ----------------
+        vol_meta = None
+        if vol_enabled:
+            bands = _atr_pct_bands_from_df(
+                ltf, lookback_days=lookback_days,
+                low_pct=vol_low_pct, high_pct=vol_high_pct, extreme_pct=vol_extreme_pct
+            )
+            if bands is not None:
+                allowed, band, size_factor, reason_code = _volatility_gate(
+                    bands["atr_now"], bands["p10"], bands["p90"], bands.get("p95"), size_high=vol_size_high
+                )
+                vol_meta = {"atr_pct_now": bands["atr_now"], "p10": bands["p10"], "p90": bands["p90"], "p95": bands.get("p95"),
+                            "band": band, "size_factor": size_factor, "reason": reason_code}
+
+                # Hard gate si LOW ou EXTREME
+                if not allowed:
+                    out = {
+                        "symbol": symbol,
+                        "interval": interval,
+                        "regime": "no-trade",
+                        "decision": {"action": "HOLD", "entry": None, "sl": None, "tp": None, "confidence": 0, "risk_level": risk_level},
+                        "reason": (
+                            f"Volatility gate {band} ({reason_code}): "
+                            f"ATR%={round(100.0*(bands['atr_now'] or 0.0), 4)} "
+                            f"vs p10={round(100.0*(bands['p10'] or 0.0), 4)} "
+                            f"p95={round(100.0*((bands.get('p95') or 0.0)), 4)}."
+                        ),
+                        "volatility": vol_meta,
+                    }
+                    return _ok(out)
+            # (si pas de bands disponibles: on continue sans gating)
+
+        # ---------------- Régime (bornes globales) -----------------------
         regime = _regime_from_df(ltf, htf)
+
+        # Coupe-chop (trend_only)
+        if trend_only and regime != "trend":
+            out = {
+                "symbol": symbol,
+                "interval": interval,
+                "regime": regime,
+                "decision": {"action": "HOLD", "entry": None, "sl": None, "tp": None, "confidence": 0, "risk_level": risk_level},
+                "reason": "Filtre trend-only activé (on évite les ranges).",
+                "volatility": vol_meta,
+            }
+            return _ok(out)
+
         if regime == "no-trade":
             out = {
                 "symbol": symbol,
                 "interval": interval,
                 "regime": regime,
                 "decision": {"action": "HOLD", "entry": None, "sl": None, "tp": None, "confidence": 0, "risk_level": risk_level},
-                "reason": "Régime no-trade (ATR% extrême ou trop faible)."
+                "reason": "Régime no-trade (ATR% extrême ou trop faible).",
+                "volatility": vol_meta,
             }
             return _ok(out)
 
+        # ---------------- Score / Confluence -----------------------------
         score = _directional_score(last_ltf)
         conf = _confidence(last_ltf, score)
-
-        # Confluence HTF: interdit contre-tendance
         ltf_up = (last_ltf.get("EMA_Fast") or 0) >= (last_ltf.get("EMA_Slow") or 0)
         htf_up = (last_htf.get("EMA_Fast") or 0) >= (last_htf.get("EMA_Slow") or 0)
 
         action = "HOLD"
         if regime == "trend":
-            if score >= 2 and ltf_up and htf_up:
+            if score >= CONFIG["DEC_TREND_BUY_SCORE"] and ltf_up and htf_up:
                 action = "BUY"
-            elif score <= -2 and (not ltf_up) and (not htf_up):
+            elif score <= CONFIG["DEC_TREND_SELL_SCORE"] and (not ltf_up) and (not htf_up):
                 action = "SELL"
         else:  # range
-            if score <= -2 and (not htf_up):
+            if score <= CONFIG["DEC_RANGE_SELL_SCORE"] and (not htf_up):
                 action = "SELL"
-            elif score >= 2 and htf_up:
+            elif score >= CONFIG["DEC_RANGE_BUY_SCORE"] and htf_up:
                 action = "BUY"
+
+        # Si on est “au bord” (band HIGH) et require_htf_on_edges, impose confluence HTF stricte
+        if vol_enabled and vol_meta and vol_meta["band"] == "HIGH" and require_htf_on_edges:
+            if (action == "BUY" and not (ltf_up and htf_up)) or (action == "SELL" and not ((not ltf_up) and (not htf_up))):
+                action = "HOLD"
+
+        # Min confidence optionnel via profil
+        horizon = "scalping" if interval in {"5m", "15m"} else "swing"
+        prof = CONFIG["PROFILES"].get(horizon, {})
+        min_conf = prof.get("min_confidence", None)
+        if action != "HOLD" and isinstance(min_conf, (int, float)) and conf < float(min_conf):
+            action = "HOLD"
 
         if action == "HOLD":
             out = {
@@ -874,26 +1261,23 @@ def intraday_decision(
                 "interval": interval,
                 "regime": regime,
                 "decision": {"action": "HOLD", "entry": None, "sl": None, "tp": None, "confidence": conf, "risk_level": risk_level},
-                "reason": f"Score={score}, confluence HTF insuffisante pour {regime}."
+                "reason": f"Score={score:.2f}, confluence HTF insuffisante ou confiance<{min_conf}.",
+                "volatility": vol_meta,
             }
             return _ok(out)
 
         # ========= Niveaux via levels_autonomous (scalping 15m + ancrage D1) =========
-        # 15m => on force horizon=scalping
-        horizon = "scalping" if interval in {"5m", "15m"} else "swing"
-
-        # Récupère D1 pour ancrage (plancher SL)
-        d1_raw = meta_api.get_historical_candles(symbol, "6mo", "1d")
+        d1_raw = meta_api.get_historical_candles(symbol, f"{CONFIG['D1_PERIOD_MONTHS']}mo", "1d")
         d1 = _df_from_ohlcv(json.loads(d1_raw)["data"] if isinstance(d1_raw, str) else d1_raw["data"])
 
-        levels_json = levels_autonomous.__wrapped__(  # appel direct de la fonction
+        levels_json = levels_autonomous.__wrapped__(
             ohlcv=json.loads(ltf.tail(300).to_json(orient="records", date_format="iso")),
             action=action,
             horizon=horizon,
             risk_level=risk_level,
             use_fib=True,
             fib_atr_mult=2.0,
-            anchor_tf="htf",  # ✅ ancre sur la HTF fournie
+            anchor_tf="htf",
             htf_ohlcv=(json.loads(d1.tail(200).to_json(orient="records", date_format="iso")) if d1 is not None else None),
         )
         levels = json.loads(levels_json)
@@ -904,24 +1288,29 @@ def intraday_decision(
         sl = lv.get("sl")
         tp = lv.get("tp")
 
-        # Position sizing (simple)
+        # Position sizing (simple) + éventuelle réduction en band HIGH
         size = _position_size(entry=lv.get("entry_ref") or last_ltf.get("Close"), sl=sl, equity=equity, risk_pct=risk_pct, cap_leverage=cap_leverage)
+        size_factor = vol_meta["size_factor"] if (vol_enabled and vol_meta) else 1.0
+        if size_factor < 1.0 and size.get("units", 0) > 0:
+            size["units"] = float(size["units"]) * float(size_factor)
+            size["size_factor_vol"] = size_factor
 
         plan_mgmt = {
-            "move_be_at_R": 1.0,
-            "partial_exit_at_R": 1.5,
-            "partial_fraction": 0.5,
-            "trail_at_R": 2.0,
-            "trail_type": "ATR",
-            "trail_len": 14,
-            "time_stop_bars": 8,
+            "move_be_at_R": CONFIG["MANAGE_MOVE_BE_AT_R"],
+            "partial_exit_at_R": CONFIG["MANAGE_PARTIAL_AT_R"],
+            "partial_fraction": CONFIG["MANAGE_PARTIAL_FRAC"],
+            "trail_at_R": CONFIG["MANAGE_TRAIL_AT_R"],
+            "trail_type": CONFIG["MANAGE_TRAIL_TYPE"],
+            "trail_len": CONFIG["MANAGE_TRAIL_LEN"],
+            "time_stop_bars": CONFIG["MANAGE_TIME_STOP_BARS"],
         }
 
         reason = (
-            f"Regime={regime}, Score={score}, EMA_LTF={'up' if ltf_up else 'down'}, EMA_HTF={'up' if htf_up else 'down'}, "
-            f"ATR%={round(last_ltf.get('ATR_PCT') or 0, 2)}, BBW%={round(last_ltf.get('BBW_PCT') or 0, 2)}. "
+            f"Regime={regime}, Score={score:.2f}, EMA_LTF={'up' if ltf_up else 'down'}, EMA_HTF={'up' if htf_up else 'down'}, "
+            f"ATR%={round(100.0*(last_ltf.get('ATR_PCT') or 0.0), 4)}, BBW%={round(last_ltf.get('BBW_PCT') or 0, 2)}. "
             f"Tick={round(lv['meta'].get('tick') or 0, 6)}, MinStop≈{round(lv['meta'].get('min_stop_price') or 0, 6)}, "
-            f"Buffer≈{round(lv['meta'].get('spread_buffer') or 0, 6)}, StructFloor≈{round(lv['meta'].get('struct_floor') or 0, 6)}, FibUsed={lv['meta'].get('fib_used')}"
+            f"Buffer≈{round(lv['meta'].get('spread_buffer') or 0, 6)}, StructFloor≈{round(lv['meta'].get('struct_floor') or 0, 6)}, "
+            f"FibUsed={lv['meta'].get('fib_used')}, VolBand={(vol_meta or {}).get('band', 'NA')}"
         )
 
         out = {
@@ -940,11 +1329,11 @@ def intraday_decision(
             "position": size,
             "management": plan_mgmt,
             "reason": reason,
+            "volatility": vol_meta,
         }
         return _ok(out)
     except Exception as e:
         return _err("intraday_decision failed", exc=str(e))
-
 
 # ================================================================
 # --------------------- LLM Prompt (updated) ---------------------
@@ -952,28 +1341,34 @@ def intraday_decision(
 
 PROMPT_TMPL = Template(r"""
 Tu es **Senior Quant-Trader**.
-But : produire **une décision exploitable** (BUY/SELL/HOLD) et des **niveaux robustes** (entry/sl/tp) pour $symbol en te basant **uniquement** sur les outils listés. Aucune autre source.
+But : produire **une décision exploitable** (BUY/SELL/HOLD) et des **niveaux robustes** (entry/sl/tp) pour $symbol en te basant **uniquement** sur les outils listés.
 
 ### OUTILS (dans l'ordre)
-1) get_historical_candles("$symbol", "$period", "$interval", compact=True) → renvoie {cache_key, count}
-2) compute_indicators(cache_key="<la cache_key reçue>")   → Extraire **strictement la dernière ligne** (Close, EMA_Fast/Slow, RSI, MACD_Line/Signal, BB_Mid, BB_Upper/Lower, ATR, ATR_PCT, BBW_PCT, TickSize_Guess, Digits_Guess, MinStopPrice_Fallback).
-3) levels_autonomous(cache_key="<la même cache_key>", action, horizon="$horizon", risk_level="$risk_level", use_fib=True, fib_atr_mult=2.0)   → **uniquement si action ≠ HOLD**.
+1) get_historical_candles("$symbol", "$period", "$interval", compact=True) → {cache_key, count}
+2) compute_indicators(cache_key="<cache_key>") → dernière ligne (Close, EMA_Fast/Slow, RSI, MACD_Line/Signal, BB_Mid, BB_Upper/Lower, ATR, ATR_PCT (fraction 0–1), BBW_PCT, TickSize_Guess, Digits_Guess, MinStopPrice_Fallback).
+3) volatility_bands(cache_key="<cache_key>", lookback_days=${lookback}, low_pct=${lowp}, high_pct=${highp}, extreme_pct=${extp}, size_high=${sizeh})
+   → **OBLIGATOIRE** : renvoie { atr_pct_now, p10, p90, p95, band, size_factor, reason }.
+4) levels_autonomous(cache_key="<cache_key>", action, horizon="$horizon", risk_level="$risk_level", use_fib=True, fib_atr_mult=2.0) **uniquement si action ≠ HOLD**.
+
+### RÈGLES VOLATILITÉ
+- Si band ∈ {LOW, EXTREME} → action="HOLD" (raison = reason du tool).
+- Si band == HIGH → tu peux conserver l'action mais **note** size_factor (réduction de taille) dans la sortie.
 
 ### RÉGIME
-- **no-trade** si ATR_PCT > 5% ou < 0.3%.
-- **trend** si BBW_PCT ≥ 6% et EMA_Fast/SLOW alignées avec la TF au-dessus (ex: 1H ou D1).
-- sinon **range**.
+- **no-trade** si ATR_PCT > ${atr_high},
+  ou si ATR_PCT < ${atr_low} **et** BBW_PCT < ${bbw_squeeze}.
+  Sinon: *trend* si BBW_PCT ≥ ${bbw_trend} **et** EMAs alignées LTF=HTF, *range* sinon.
 
 ### DÉCISION
-Score directionnel (−4..+4) :
-- EMA : +1 si EMA_Fast ≥ EMA_Slow, sinon −1.
-- MACD : +1 si MACD_Line ≥ MACD_Signal, sinon −1.
-- RSI : +1 si RSI ≥ 55, −1 si RSI ≤ 45, sinon 0.
-- Position Bollinger : +1 si Close ≥ BB_Mid, sinon −1.
+Score directionnel (pondéré) :
+- EMA : +${w_ema} si EMA_Fast ≥ EMA_Slow, sinon −${w_ema}.
+- MACD : +${w_macd} si MACD_Line ≥ MACD_Signal, sinon −${w_macd}.
+- RSI : +${w_rsi} si RSI ≥ ${rsi_pos}, −${w_rsi} si RSI ≤ ${rsi_neg}, sinon 0.
+- Position Bollinger : +${w_bb} si Close ≥ BB_Mid, sinon −${w_bb}.
 
-BUY si score ≥ +2 **et** confluence avec la TF supérieure; SELL si score ≤ −2 **et** confluence; sinon HOLD.
+BUY si score ≥ ${trend_buy} **et** confluence avec la TF supérieure; SELL si score ≤ ${trend_sell} **et** confluence; sinon HOLD.
 
-**Confiance** : `confidence = round((abs(score_total)/4) * (1 - clamp((ATR_PCT - 2.0)/5.0, 0, 0.4)) * 100)`.
+**Confiance** : `confidence = round((abs(score_total)/4) * (1 - clamp((ATR_PCT - ${conf_start})/${conf_range}, 0, ${conf_cap})) * 100)`.
 
 ### NIVEAUX
 - Si **HOLD** → `entry/sl/tp = null`.
@@ -981,10 +1376,7 @@ BUY si score ≥ +2 **et** confluence avec la TF supérieure; SELL si score ≤ 
 - Si ohlcv a < MIN_BARS (ex 240) ou des indicateurs manquent/NaN :
   1) rappelle get_historical_candles avec une période plus grande (double les jours),
   2) réessaie compute_indicators.
-- Si après tentative(s) tu ne peux pas décider, PRODUIS QUAND MÊME la SORTIE JSON
-  avec action="HOLD", entry/sl/tp=null, confidence=0, et reason explicite
-  (ex: "insufficient bars: have=100, need>=240").
-- Tu ne t’arrêtes JAMAIS après un tool_call. Tu dois toujours terminer par la SORTIE JSON stricte.
+- Si après tentative(s) tu ne peux pas décider, PRODUIS QUAND MÊME la SORTIE JSON stricte.
 
 ### SORTIE (JSON strict)
 {
@@ -999,10 +1391,18 @@ BUY si score ≥ +2 **et** confluence avec la TF supérieure; SELL si score ≤ 
     "risk_level": "$risk_level"
   },
   "reason": "<résumé concis en FR>",
-  "regime": "<trend|range|no-trade>"
+  "regime": "<trend|range|no-trade>",
+  "volatility": {
+    "atr_pct_now": <number>,
+    "p10": <number>,
+    "p90": <number>,
+    "p95": <number|null>,
+    "band": "<LOW|NORMAL|HIGH|EXTREME>",
+    "size_factor": <number>,
+    "reason": "<ATR_OK|ATR_HIGH_SIZE_DOWN|ATR_GATE_LOW|ATR_GATE_HIGH>"
+  }
 }
 """)
-
 
 @mcp.prompt()
 def analysis_agent(
@@ -1013,10 +1413,32 @@ def analysis_agent(
     risk_level: str = "medium",
 ) -> str:
     return PROMPT_TMPL.substitute(
-        symbol=symbol, period=period, interval=interval,
-        horizon=horizon, risk_level=risk_level,
+        symbol=symbol,
+        period=period,
+        interval=interval,
+        horizon=horizon,
+        risk_level=risk_level,
+        lookback=CONFIG["VOL_LOOKBACK_DAYS"],
+        lowp=CONFIG["VOL_LOW_PCT"],
+        highp=CONFIG["VOL_HIGH_PCT"],
+        extp=CONFIG["VOL_EXTREME_PCT"],
+        sizeh=CONFIG["VOL_SIZE_HIGH"],
+        atr_high=CONFIG["REGIME_ATR_HIGH"],
+        atr_low=CONFIG["REGIME_ATR_LOW"],
+        bbw_squeeze=CONFIG["REGIME_SQUEEZE_BBW"],
+        bbw_trend=CONFIG["REGIME_BBW_TREND"],
+        w_ema=CONFIG["SCORE_W_EMA"],
+        w_macd=CONFIG["SCORE_W_MACD"],
+        w_rsi=CONFIG["SCORE_W_RSI"],
+        rsi_pos=CONFIG["DEC_RSI_POS"],
+        rsi_neg=CONFIG["DEC_RSI_NEG"],
+        w_bb=CONFIG["SCORE_W_BBPOS"],
+        trend_buy=CONFIG["DEC_TREND_BUY_SCORE"],
+        trend_sell=CONFIG["DEC_TREND_SELL_SCORE"],
+        conf_start=CONFIG["CONF_DAMP_START"],
+        conf_range=CONFIG["CONF_DAMP_RANGE"],
+        conf_cap=CONFIG["CONF_DAMP_CAP"],
     )
-
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")

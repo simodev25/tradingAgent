@@ -18,10 +18,10 @@ except Exception as e:  # pragma: no cover
     meta_api = None  # type: ignore
     logger.error(f"[INIT] meta_api import failed: {e}")
 
-mcp = FastMCP("Trading Execution MCP Server", log_level="DEBUG")
+mcp = FastMCP("Trading Execution MCP Server", log_level="INFO")
 
 logger.remove()
-logger.add(sys.stderr, level="DEBUG")
+logger.add(sys.stderr, level="INFO")
 
 
 # ---------- Helpers ----------

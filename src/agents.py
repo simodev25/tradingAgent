@@ -251,7 +251,7 @@ async def run_news_mcp(symbol: str) -> dict:
                 )
 
                 raw = extract_last_message(resp)
-                logger.info(f"🚀 run_news_mcp {raw}")
+
 
                 # Safeguard: réponse non JSON => fallback sans lever d'exception
                 if isinstance(raw, str):
@@ -417,7 +417,6 @@ async def run_analysis_tec_mcp(
                     raise
 
                 raw = extract_last_message(resp)
-                logger.info(f"🚀 run_analysis_tec_mcp {raw}")
 
                 # ➜ Si la réponse n’est pas du JSON (ex. “need more steps”), on fallback sans lever d’exception
                 if isinstance(raw, str):
@@ -558,7 +557,6 @@ async def run_execution_mcp(
 
                 # 4) Extraction + parsage JSON (identique à run_analysis_tec_mcp)
                 raw = extract_last_message(resp)
-                logger.info(f"🚀 run_execution_mcp {raw}")
                 if isinstance(raw, str):
                     lw = raw.lower()
                     if ("need more steps" in lw) or ("sorry" in lw and "step" in lw):
