@@ -164,7 +164,8 @@ def _ensure_cached_ohlcv(symbol: str, period: str, interval: str) -> str:
             else:
                 data = []
         except Exception as _e:
-            # keep data as empty list so we raise below
+            # keep data as empty list so we raise below, but log for diagnostics
+            logger.warning(f"[MCP:ANALYSIS] Yahoo fallback failed for {symbol} ({period}/{interval}): {_e}")
             data = []
     if not isinstance(data, list) or not data:
         raise ValueError(f"Empty OHLCV for {symbol}:{period}:{interval}")
@@ -614,6 +615,181 @@ def levels_autonomous(cache_key: str, action: str, horizon: str, risk_level: str
     except Exception as e:
         return _err("levels_autonomous failed", exc=str(e), cache_key=cache_key)
 
+# ---- Price-Action fallback (Box + M1 sweep + M5 confirm) ----
+def _price_action_fallback(
+    symbol: str,
+    inter: str,
+    ltf: pd.DataFrame,
+    ltf_last: Dict[str, Any],
+    equity: float,
+    risk_pct: float,
+    cap_leverage: float,
+    risk_level: str,
+    vol_meta: Optional[Dict[str, Any]] = None,
+) -> Optional[str]:
+    try:
+        if not _as_bool(os.getenv("PRICE_ACTION_FALLBACK", "false")):
+            return None
+        allow_on_vgate = _as_bool(os.getenv("PRICE_ACTION_ON_VGATE", "false"))
+
+        # Box parameters
+        is_15m = (inter == "15m")
+        lookback_m15 = int(os.getenv("BOX_LOOKBACK_M15", "6"))
+        lookback_m5 = int(os.getenv("BOX_LOOKBACK_M5", "18"))
+        n_box = lookback_m15 if is_15m else lookback_m5
+        if len(ltf) < max(40, n_box + 5):
+            return None
+
+        # Tick and box
+        tick = float(ltf_last.get("TickSize_Guess") or 0.0)
+        if not (tick and np.isfinite(tick) and tick > 0):
+            prices = pd.concat([ltf["Open"], ltf["High"], ltf["Low"], ltf["Close"]], ignore_index=True)
+            from analysis_core import _infer_digits_from_prices as _idp, _infer_tick_from_prices as _itp
+            d = _idp(prices)
+            tick = float(_itp(prices, d) or (10 ** (-max(d or 3, 3))))
+        box_min_ticks = int(os.getenv("BOX_MIN_TICKS", "40"))
+        box_max_ticks = int(os.getenv("BOX_MAX_TICKS", "400"))
+        sweep_buf_ticks = int(os.getenv("SWEEP_BUFFER_TICKS", "5"))
+        setup_window_min = int(os.getenv("SETUP_WINDOW_MIN", "30"))
+        retest_bars_5m = int(os.getenv("RETEST_BARS_5M", "2"))
+        rr_target = float(os.getenv("RR_TARGET", "1.6"))
+        tp_mult = float(os.getenv("BOX_TP_MULT", "1.0"))
+
+        tail = ltf.tail(max(n_box, 6)).copy()
+        box_hi = float(tail["High"].max())
+        box_lo = float(tail["Low"].min())
+        box_h = float(max(0.0, box_hi - box_lo))
+        if box_h <= 0:
+            return None
+        box_ticks = int(round(box_h / tick)) if tick else 0
+        if box_ticks < box_min_ticks or box_ticks > box_max_ticks:
+            return None
+
+        # Ultra LTF data
+        params = _resolve_indicator_params()
+        ck5 = _ensure_cached_ohlcv(symbol, f"{CONFIG['LTF_PERIOD_5M']}d", "5m")
+        df5 = _df_from_cache(ck5, params)
+        ck1 = _ensure_cached_ohlcv(symbol, "1d", "1m")
+        df1 = _df_from_cache(ck1, params)
+        if df5 is None or df5.empty or df1 is None or df1.empty:
+            return None
+        last5 = _last_row(df5)
+        ema_up_5m = (last5.get("EMA_Fast") or 0) >= (last5.get("EMA_Slow") or 0)
+
+        # Sweeps within window on M1
+        now_ts = pd.Timestamp.utcnow().tz_localize(None)
+        cutoff = now_ts - pd.Timedelta(minutes=setup_window_min)
+        d1w = df1[df1["Date"] >= cutoff].copy()
+        buf = sweep_buf_ticks * tick
+        def _swept_down(row) -> bool:
+            try:
+                return (float(row["Low"]) <= box_lo - buf) and (float(row["Close"]) >= box_lo)
+            except Exception:
+                return False
+        def _swept_up(row) -> bool:
+            try:
+                return (float(row["High"]) >= box_hi + buf) and (float(row["Close"]) <= box_hi)
+            except Exception:
+                return False
+        has_sweep_down = any(_swept_down(r) for _, r in d1w.iterrows())
+        has_sweep_up = any(_swept_up(r) for _, r in d1w.iterrows())
+
+        # M5 retest of boundary
+        d5n = df5.tail(max(2, retest_bars_5m)).copy()
+        retest_lo = (d5n["Low"].min() <= (box_lo + buf))
+        retest_hi = (d5n["High"].max() >= (box_hi - buf))
+
+        ltf_up = (ltf_last.get("EMA_Fast") or 0) >= (ltf_last.get("EMA_Slow") or 0)
+        want_buy = has_sweep_down and ema_up_5m and retest_lo and ltf_up
+        want_sell = has_sweep_up and (not ema_up_5m) and retest_hi and (not ltf_up)
+        if not (want_buy or want_sell):
+            return None
+
+        entry_ref = float(ltf_last.get("Close") or 0.0)
+        if want_buy:
+            sl = _round_to_tick(box_lo - buf, tick)
+            sl_dist = float(entry_ref - (sl or entry_ref))
+            tp_box = entry_ref + tp_mult * box_h
+            tp_rr  = entry_ref + rr_target * max(sl_dist, tick)
+            tp = _round_to_tick(max(tp_box, tp_rr), tick)
+            action = "BUY"
+        else:
+            sl = _round_to_tick(box_hi + buf, tick)
+            sl_dist = float((sl or entry_ref) - entry_ref)
+            tp_box = entry_ref - tp_mult * box_h
+            tp_rr  = entry_ref - rr_target * max(sl_dist, tick)
+            tp = _round_to_tick(min(tp_box, tp_rr), tick)
+            action = "SELL"
+
+        # Spread gating similar to scalping
+        tp_spread_ratio = None
+        try:
+            raw = meta_api.get_current_price(symbol)
+            data_or_raw = json.loads(raw) if isinstance(raw, str) else raw
+            q = data_or_raw.get("data") if isinstance(data_or_raw, dict) and "data" in data_or_raw else data_or_raw
+            if isinstance(q, dict):
+                bid = q.get("bid") or q.get("Bid")
+                ask = q.get("ask") or q.get("Ask")
+                if isinstance(bid, (int, float)) and isinstance(ask, (int, float)) and ask > bid:
+                    spread = float(ask - bid)
+                    if action == "BUY" and isinstance(tp, (int, float)):
+                        reward = max(0.0, float(tp) - entry_ref)
+                    elif action == "SELL" and isinstance(tp, (int, float)):
+                        reward = max(0.0, entry_ref - float(tp))
+                    else:
+                        reward = 0.0
+                    if spread > 0 and reward > 0:
+                        tp_spread_ratio = reward / spread
+                        band = (vol_meta or {}).get("band")
+                        try:
+                            min_norm = float(os.getenv("TP_SPREAD_MIN_SCALP", "3.0"))
+                            min_high = float(os.getenv("TP_SPREAD_MIN_HIGH_SCALP", "5.0"))
+                        except Exception:
+                            min_norm, min_high = 3.0, 5.0
+                        need = min_high if band == "HIGH" else min_norm
+                        if tp_spread_ratio < need and not allow_on_vgate:
+                            return None
+        except Exception:
+            pass
+
+        size = _position_size(entry=entry_ref, sl=sl, equity=equity, risk_pct=risk_pct, cap_leverage=cap_leverage)
+        size_factor = (vol_meta or {}).get("size_factor", 1.0)
+        if size_factor < 1.0 and size.get("units", 0) > 0:
+            size["units"] = float(size["units"]) * float(size_factor)
+            size["size_factor_vol"] = float(size_factor)
+
+        levels = {
+            "entry_ref": _round_to_tick(entry_ref, tick),
+            "sl": sl,
+            "tp": tp,
+            "rr": float(abs((tp - entry_ref) / max(abs(entry_ref - sl), tick))) if (tp is not None and sl is not None) else None,
+            "meta": {
+                "tick": float(tick),
+                "box_high": box_hi,
+                "box_low": box_lo,
+                "box_height": box_h,
+                "box_ticks": box_ticks,
+                "sweep_down": bool(has_sweep_down),
+                "sweep_up": bool(has_sweep_up),
+                "retest_lo": bool(retest_lo),
+                "retest_hi": bool(retest_hi),
+            },
+            "source": "price_action_fallback",
+        }
+
+        return _ok({
+            "symbol": symbol, "interval": inter, "regime": "trend",
+            "decision": {"action": action, "entry": levels["entry_ref"], "sl": sl, "tp": tp, "confidence": 60, "risk_level": risk_level},
+            "levels": levels,
+            "position": size,
+            "reason": f"Price-action fallback: box({n_box}) sweep + M5 confirm; band={(vol_meta or {}).get('band','NA')}",
+            "volatility": vol_meta,
+            "tp_vs_spread_ratio": tp_spread_ratio,
+        })
+    except Exception as _e:
+        logger.warning(f"[MCP:ANALYSIS] price-action fallback error: {_e}")
+        return None
+
 # ---- Intraday decision (primitifs only) ----
 
 @mcp.tool()
@@ -641,6 +817,7 @@ def intraday_decision(symbol: str, interval: str = "15m", equity: float = 10000.
         last_ltf = _last_row(ltf)
         last_htf = _last_row(htf)
         vol_meta = None
+        vgate_denied = False
         if vol_enabled:
             bands = _atr_pct_bands_from_df(ltf, lookback_days=lb, low_pct=lp, high_pct=hp, extreme_pct=ep)
             if bands is not None:
@@ -656,11 +833,13 @@ def intraday_decision(symbol: str, interval: str = "15m", equity: float = 10000.
                     reason_code = "ATR_LOW_SIZE_DOWN"
                 vol_meta = {"atr_pct_now": bands["atr_now"], "p10": bands["p10"], "p90": bands["p90"], "p95": bands.get("p95"), "band": band, "size_factor": size_factor, "reason": reason_code}
                 if not allowed:
-                    return _ok({
-                        "symbol": symbol, "interval": inter, "regime": "no-trade",
-                        "decision": {"action": "HOLD", "entry": None, "sl": None, "tp": None, "confidence": 0, "risk_level": risk_level},
-                        "reason": f"Volatility gate {band} ({reason_code})", "volatility": vol_meta,
-                    })
+                    vgate_denied = True
+                    if not _as_bool(os.getenv("PRICE_ACTION_ON_VGATE", "false")):
+                        return _ok({
+                            "symbol": symbol, "interval": inter, "regime": "no-trade",
+                            "decision": {"action": "HOLD", "entry": None, "sl": None, "tp": None, "confidence": 0, "risk_level": risk_level},
+                            "reason": f"Volatility gate {band} ({reason_code})", "volatility": vol_meta,
+                        })
         regime = _regime_from_df(ltf, htf)
         if trend_only and regime != "trend":
             return _ok({
@@ -718,6 +897,13 @@ def intraday_decision(symbol: str, interval: str = "15m", equity: float = 10000.
         if action != "HOLD" and isinstance(min_conf, (int, float)) and conf < float(min_conf):
             action = "HOLD"
         if action == "HOLD":
+            pa = _price_action_fallback(
+                symbol=symbol, inter=inter, ltf=ltf, ltf_last=last_ltf,
+                equity=equity, risk_pct=risk_pct, cap_leverage=cap_leverage,
+                risk_level=risk_level, vol_meta=vol_meta,
+            )
+            if pa:
+                return pa
             return _ok({
                 "symbol": symbol, "interval": inter, "regime": regime,
                 "decision": {"action": "HOLD", "entry": None, "sl": None, "tp": None, "confidence": conf, "risk_level": risk_level},
@@ -765,8 +951,12 @@ def intraday_decision(symbol: str, interval: str = "15m", equity: float = 10000.
                     if not mi: return None
                     v5 = mi["ema_up"].get("5m")
                     v1 = mi["ema_up"].get("1m")
+                    require_both = _as_bool(os.getenv("MICRO_REQUIRE_BOTH", "true"))
                     if inter == "15m":
-                        return (v5 is True) and (v1 is True)
+                        if require_both:
+                            return (v5 is True) and (v1 is True)
+                        votes = [ltf_up, v5 is True, v1 is True]
+                        return sum(1 for v in votes if v) >= 2
                     # inter == "5m": require only 1m
                     return (v1 is True)
 
@@ -774,8 +964,12 @@ def intraday_decision(symbol: str, interval: str = "15m", equity: float = 10000.
                     if not mi: return None
                     v5 = mi["ema_up"].get("5m")
                     v1 = mi["ema_up"].get("1m")
+                    require_both = _as_bool(os.getenv("MICRO_REQUIRE_BOTH", "true"))
                     if inter == "15m":
-                        return (v5 is False) and (v1 is False)
+                        if require_both:
+                            return (v5 is False) and (v1 is False)
+                        votes = [not ltf_up, v5 is False, v1 is False]
+                        return sum(1 for v in votes if v) >= 2
                     return (v1 is False)
 
                 misaligned = False
@@ -796,6 +990,16 @@ def intraday_decision(symbol: str, interval: str = "15m", equity: float = 10000.
                         "volatility": vol_meta,
                         "micro_trend": micro,
                     })
+
+        # If volatility gate denied but allowed to use price-action fallback, try it now
+        if vgate_denied and _as_bool(os.getenv("PRICE_ACTION_ON_VGATE", "false")):
+            pa = _price_action_fallback(
+                symbol=symbol, inter=inter, ltf=ltf, ltf_last=last_ltf,
+                equity=equity, risk_pct=risk_pct, cap_leverage=cap_leverage,
+                risk_level=risk_level, vol_meta=vol_meta,
+            )
+            if pa:
+                return pa
 
         d1_df = None
         # Skip daily context fetch for scalping to reduce overhead; keep for higher horizons
@@ -830,7 +1034,7 @@ def intraday_decision(symbol: str, interval: str = "15m", equity: float = 10000.
         if not levels.get("ok"):
             return _err("levels_autonomous_from_json failed inside intraday_decision", inner=levels)
         lv = levels["data"]
-        entry = 0
+        entry = lv.get("entry_ref") or last_ltf.get("Close")
         sl = lv.get("sl")
         tp = lv.get("tp")
         # Spread gating (scalping): exiger un TP à >= k×spread (k=5 en band HIGH, sinon 3 par défaut)
