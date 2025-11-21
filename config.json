@@ -38,5 +38,16 @@
     "file": "trading_agent.log",
     "max_size": "10MB",
     "backup_count": 5
+  },
+  "positions_guard": {
+    "enabled": true,
+    "run_on_start": true,
+    "cron_trigger": "*",
+    "timezone": "Europe/Paris",
+    "dry_run": false,
+    "strategy": "Toujours sécuriser: SL > BE si en gain; trailing progressif",
+    "rules": {
+      "GUARD_MIN_POS_BUFFER_PCT": 0.0001
+    }
   }
 }

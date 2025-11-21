@@ -445,6 +445,56 @@ async def run_news_mcp(symbol: str) -> dict:
 
 
 # -------------------------
+# Positions Guard MCP
+# -------------------------
+async def run_positions_guard_mcp(
+    strategy: str | None = None,
+    rules_overrides: dict | None = None,
+    dry_run: bool = True,
+) -> dict:
+    """Version sans LLM: import direct du module MCP et appel des tools.
+
+    1) review_positions(rules_json)
+    2) (optionnel) execute_position_actions(plan_json, dry_run)
+    """
+    try:
+        module_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "mcp", "execution", "positions_guard_mcp.py")
+        )
+        spec = importlib.util.spec_from_file_location("positions_guard_mcp_direct", module_path)
+        if spec is None or spec.loader is None:
+            return {"ok": False, "reason": "cannot load positions_guard_mcp module"}
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+
+        # Construit les overrides (merge stratégie en commentaire si utile)
+        overrides = dict(rules_overrides or {})
+        if strategy:
+            overrides.setdefault("strategy_hint", strategy)
+
+        # 1) Générer le plan
+        raw_plan = await mod.review_positions(json.dumps(overrides, ensure_ascii=False))
+        plan_payload = json.loads(raw_plan)
+        if not plan_payload.get("ok", True):
+            return {"ok": False, "reason": plan_payload.get("message", "review_positions error"), "raw": plan_payload}
+
+        plan = plan_payload.get("data") or {}
+
+        # 2) Exécuter (ou simuler)
+        raw_exec = await mod.execute_position_actions(json.dumps(plan, ensure_ascii=False), dry_run=bool(dry_run))
+        exec_payload = json.loads(raw_exec)
+
+        return {
+            "ok": bool(exec_payload.get("ok", True)),
+            "plan": plan,
+            "execution": exec_payload,
+            "dry_run": bool(dry_run),
+        }
+    except Exception as e:
+        logger.error(f"Erreur dans run_positions_guard_mcp: {e}")
+        return {"ok": False, "reason": str(e)}
+
+# -------------------------
 # Analysis Technique MCP (timeout + recursion_limit + non-JSON fallback)
 # -------------------------
 async def run_analysis_tec_mcp(
