@@ -1,0 +1,2032 @@
+[
+  {
+    "symbol": "EURUSD.pro",
+    "timestamp": "2025-11-07T13:36:22.167860+01:00",
+    "duration_seconds": 39.384737,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "EURUSD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "BUY",
+        "entry": 0,
+        "sl": 1.15537,
+        "tp": 1.15653,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Regime=range, Score=4.00, EMA_LTF=up, EMA_HTF=up; ATR%=0.046; Tick=1e-05; MinStop≈0.0004; Buffer≈2e-05; Struct≈0; FibUsed=False; VolBand=NORMAL",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.00046006121834276054,
+        "p10": 0.00025953893863315023,
+        "p90": 0.0006760852520903355,
+        "p95": 0.0009000265272980027,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday",
+      "levels": {
+        "entry_ref": 1.15579,
+        "sl": 1.15537,
+        "tp": 1.15653,
+        "rr": 1.772447185161264,
+        "meta": {
+          "tick": 1e-05,
+          "digits_guess": 5,
+          "atr_ltf": 0.0005317341555483793,
+          "atr_basis": 0.0005317341555483793,
+          "min_stop_price": 0.0004,
+          "spread_buffer": 2e-05,
+          "struct_floor": 0.0,
+          "sl_dist_final": 0.00042,
+          "tp_dist_final": 0.0007444278177677309,
+          "rr_target": 1.3,
+          "horizon": "scalping",
+          "risk_level": "high",
+          "action": "BUY",
+          "fib_used": false,
+          "fib_tp_raw": null,
+          "anchor_tf": "ltf",
+          "eps": 5e-06
+        }
+      },
+      "position": {
+        "units": 50000.0,
+        "risk_eur": 50.0,
+        "distance": 0.00042000000000008697
+      },
+      "management": {
+        "move_be_at_R": 1.0,
+        "partial_exit_at_R": 1.8,
+        "partial_fraction": 0.5,
+        "trail_at_R": 2.2,
+        "trail_type": "ATR",
+        "trail_len": 14,
+        "time_stop_bars": 6
+      }
+    },
+    "execution": {
+      "plan": {
+        "symbol": "EURUSD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": 0,
+          "symbol_floating_pnl": 0,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 47040.46,
+          "free_margin": 47040.46,
+          "margin_required_est": 231.17,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": true,
+          "direction_ok": true,
+          "spec_ok": true,
+          "rr": 1.77,
+          "tp_vs_spread_ratio": 93.0,
+          "hedge_ok": true
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "proceed",
+          "adjust_reason": null,
+          "cancel_reason": null
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": true,
+          "reason": "Confiance élevée, RR > 1.2, spread ratio OK, hedge mode activé avec USDCHF",
+          "hedge": {
+            "enabled": true,
+            "paired_with": "USDCHF.pro",
+            "volume": 0.08
+          }
+        },
+        "execution_result": {
+          "ok": true,
+          "data": {
+            "order": 123456789,
+            "retcode": 10009,
+            "deal": 987654321,
+            "volume": 0.2,
+            "price": 1.15584,
+            "bid": 1.15576,
+            "ask": 1.15584,
+            "comment": "BUY EURUSD.pro @1.15584 SL=1.15537 TP=1.15653 Hedge=USDCHF.pro:0.08",
+            "request_id": null,
+            "retcode_external": null
+          }
+        }
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "GBPUSD.pro",
+    "timestamp": "2025-11-07T13:36:22.051295+01:00",
+    "duration_seconds": 35.512945,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "GBPUSD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "BUY",
+        "entry": 0,
+        "sl": 1.312,
+        "tp": 1.31339,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Regime=range, Score=4.00, EMA_LTF=up, EMA_HTF=up; ATR%=0.0529; Tick=1e-05; MinStop≈0.0004; Buffer≈2e-05; Struct≈0; FibUsed=False; VolBand=NORMAL",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0005289121759964221,
+        "p10": 0.0002859291074243071,
+        "p90": 0.000879625564781642,
+        "p95": 0.0010961945828669064,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday",
+      "levels": {
+        "entry_ref": 1.31242,
+        "sl": 1.312,
+        "tp": 1.31339,
+        "rr": 2.313849726737414,
+        "meta": {
+          "tick": 1e-05,
+          "digits_guess": 5,
+          "atr_ltf": 0.0006941549180212242,
+          "atr_basis": 0.0006941549180212242,
+          "min_stop_price": 0.0004,
+          "spread_buffer": 2e-05,
+          "struct_floor": 0.0,
+          "sl_dist_final": 0.00042,
+          "tp_dist_final": 0.0009718168852297139,
+          "rr_target": 1.3,
+          "horizon": "scalping",
+          "risk_level": "high",
+          "action": "BUY",
+          "fib_used": false,
+          "fib_tp_raw": null,
+          "anchor_tf": "ltf",
+          "eps": 5e-06
+        }
+      },
+      "position": {
+        "units": 50000.0,
+        "risk_eur": 50.0,
+        "distance": 0.0004199999999998649
+      },
+      "management": {
+        "move_be_at_R": 1.0,
+        "partial_exit_at_R": 1.8,
+        "partial_fraction": 0.5,
+        "trail_at_R": 2.2,
+        "trail_type": "ATR",
+        "trail_len": 14,
+        "time_stop_bars": 6
+      }
+    },
+    "execution": {
+      "plan": {
+        "symbol": "GBPUSD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": 0,
+          "symbol_floating_pnl": 0,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 47040.46,
+          "free_margin": 47040.46,
+          "margin_required_est": 0,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": true,
+          "direction_ok": true,
+          "spec_ok": true,
+          "rr": 2.31,
+          "tp_vs_spread_ratio": 97.18,
+          "hedge_ok": true
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "proceed",
+          "adjust_reason": null,
+          "cancel_reason": null
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": true,
+          "reason": "Confiance élevée, RR > 1.2, ratio TP/spread > 4, marge suffisante, hedge possible avec USDCHF",
+          "hedge": {
+            "enabled": true,
+            "paired_with": "USDCHF.pro",
+            "volume": 0.08
+          }
+        },
+        "execution_result": {
+          "ok": true,
+          "data": {
+            "stringCode": "TRADE_RETCODE_DONE",
+            "numericCode": 10009,
+            "message": "Request completed",
+            "orderId": "130399827",
+            "positionId": "130399827",
+            "tradeExecutionTime": "2025-11-07T13:36:21.365Z",
+            "tradeStartTime": "2025-11-07T12:36:20.845Z"
+          }
+        }
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "USDCHF.pro",
+    "timestamp": "2025-11-07T13:36:22.168406+01:00",
+    "duration_seconds": 32.681367,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "USDCHF.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "SELL",
+        "entry": 0,
+        "sl": 0.80648,
+        "tp": 0.80545,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Regime=range, Score=-4.00, EMA_LTF=down, EMA_HTF=down; ATR%=0.0541; Tick=1e-05; MinStop≈0.0004; Buffer≈2e-05; Struct≈0; FibUsed=False; VolBand=NORMAL",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0005411065829375022,
+        "p10": 0.000315149555578217,
+        "p90": 0.0007649480480814579,
+        "p95": 0.0009424096858171763,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday",
+      "levels": {
+        "entry_ref": 0.80606,
+        "sl": 0.80648,
+        "tp": 0.80545,
+        "rr": 1.4538812408086765,
+        "meta": {
+          "tick": 1e-05,
+          "digits_guess": 5,
+          "atr_ltf": 0.00043616437224260296,
+          "atr_basis": 0.00043616437224260296,
+          "min_stop_price": 0.0004,
+          "spread_buffer": 2e-05,
+          "struct_floor": 0.0,
+          "sl_dist_final": 0.00042,
+          "tp_dist_final": 0.0006106301211396441,
+          "rr_target": 1.3,
+          "horizon": "scalping",
+          "risk_level": "high",
+          "action": "SELL",
+          "fib_used": false,
+          "fib_tp_raw": null,
+          "anchor_tf": "ltf",
+          "eps": 5e-06
+        }
+      },
+      "position": {
+        "units": 50000.0,
+        "risk_eur": 50.0,
+        "distance": 0.00041999999999997595
+      },
+      "management": {
+        "move_be_at_R": 1.0,
+        "partial_exit_at_R": 1.8,
+        "partial_fraction": 0.5,
+        "trail_at_R": 2.2,
+        "trail_type": "ATR",
+        "trail_len": 14,
+        "time_stop_bars": 6
+      }
+    },
+    "execution": {
+      "plan": {
+        "symbol": "USDCHF.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": 0,
+          "symbol_floating_pnl": 0,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 47040.46,
+          "free_margin": 47040.46,
+          "margin_required_est": 0,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": true,
+          "direction_ok": true,
+          "spec_ok": true,
+          "rr": 1.45,
+          "tp_vs_spread_ratio": 4.29,
+          "hedge_ok": true
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "proceed",
+          "adjust_reason": null,
+          "cancel_reason": null
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": true,
+          "reason": "Confiance élevée (100), RR=1.45 > 1.2, ratio TP/spread=4.29 > 4, hedge possible avec EURUSD",
+          "hedge": {
+            "enabled": true,
+            "paired_with": "EURUSD.pro",
+            "volume": 0.08
+          }
+        },
+        "execution_result": {
+          "ok": true,
+          "data": {
+            "stringCode": "TRADE_RETCODE_DONE",
+            "numericCode": 10009,
+            "message": "Request completed",
+            "orderId": "130399829",
+            "positionId": "130399829",
+            "tradeExecutionTime": "2025-11-07T13:36:21.952Z",
+            "tradeStartTime": "2025-11-07T12:36:21.433Z"
+          }
+        }
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "USDCAD.pro",
+    "timestamp": "2025-11-07T13:36:22.170139+01:00",
+    "duration_seconds": 29.825433,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "USDCAD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "SELL",
+        "entry": 0,
+        "sl": 1.41152,
+        "tp": 1.41055,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Regime=range, Score=-4.00, EMA_LTF=down, EMA_HTF=down; ATR%=0.0271; Tick=1e-05; MinStop≈0.0004; Buffer≈2e-05; Struct≈0; FibUsed=False; VolBand=NORMAL",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0002708778180176748,
+        "p10": 0.00020453534757148125,
+        "p90": 0.0005298919048176387,
+        "p95": 0.0006269114424626667,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday",
+      "levels": {
+        "entry_ref": 1.4111,
+        "sl": 1.41152,
+        "tp": 1.41055,
+        "rr": 1.3,
+        "meta": {
+          "tick": 1e-05,
+          "digits_guess": 5,
+          "atr_ltf": 0.00038223568900474093,
+          "atr_basis": 0.00038223568900474093,
+          "min_stop_price": 0.0004,
+          "spread_buffer": 2e-05,
+          "struct_floor": 0.0,
+          "sl_dist_final": 0.00042,
+          "tp_dist_final": 0.000546,
+          "rr_target": 1.3,
+          "horizon": "scalping",
+          "risk_level": "high",
+          "action": "SELL",
+          "fib_used": false,
+          "fib_tp_raw": null,
+          "anchor_tf": "ltf",
+          "eps": 5e-06
+        }
+      },
+      "position": {
+        "units": 50000.0,
+        "risk_eur": 50.0,
+        "distance": 0.00042000000000008697
+      },
+      "management": {
+        "move_be_at_R": 1.0,
+        "partial_exit_at_R": 1.8,
+        "partial_fraction": 0.5,
+        "trail_at_R": 2.2,
+        "trail_type": "ATR",
+        "trail_len": 14,
+        "time_stop_bars": 6
+      }
+    },
+    "execution": {
+      "plan": {
+        "symbol": "USDCAD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": 0,
+          "symbol_floating_pnl": 0,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 47040.46,
+          "free_margin": 47040.46,
+          "margin_required_est": 0,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": true,
+          "direction_ok": true,
+          "spec_ok": true,
+          "rr": 1.3,
+          "tp_vs_spread_ratio": 54.6,
+          "hedge_ok": false
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "proceed",
+          "adjust_reason": null,
+          "cancel_reason": null
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": true,
+          "reason": "Confiance élevée, RR acceptable, pas de positions existantes, marge suffisante",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": 0.2
+          }
+        },
+        "execution_result": {
+          "ok": true,
+          "data": {
+            "stringCode": "TRADE_RETCODE_DONE",
+            "numericCode": 10009,
+            "message": "Request completed",
+            "orderId": "130399835",
+            "positionId": "130399835",
+            "tradeExecutionTime": "2025-11-07T13:36:22.516Z",
+            "tradeStartTime": "2025-11-07T12:36:21.996Z"
+          }
+        }
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "EURCHF.pro",
+    "timestamp": "2025-11-07T13:36:22.168221+01:00",
+    "duration_seconds": 25.049664,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "EURCHF.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "HOLD",
+        "entry": null,
+        "sl": null,
+        "tp": null,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Score=-4.00 / Confluence insuffisante.",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.00035525444488978137,
+        "p10": 0.00020147951754768446,
+        "p90": 0.0005024140030817236,
+        "p95": 0.0005410258444850328,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday"
+    },
+    "execution": {
+      "plan": {
+        "symbol": "EURCHF.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": 0,
+          "symbol_floating_pnl": 0,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 47040.46,
+          "free_margin": 47040.46,
+          "margin_required_est": 0,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": true,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Action HOLD avec confluence insuffisante"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Règle 1: Action HOLD avec confiance 100 mais confluence insuffisante",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "EURGBP.pro",
+    "timestamp": "2025-11-07T13:36:22.168127+01:00",
+    "duration_seconds": 23.31783,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "EURGBP.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "HOLD",
+        "entry": null,
+        "sl": null,
+        "tp": null,
+        "confidence": 25,
+        "risk_level": "high"
+      },
+      "reason": "Score=-1.00 / Confluence insuffisante.",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.00041456817083975015,
+        "p10": 0.00021329884890987558,
+        "p90": 0.0006387406641627705,
+        "p95": 0.0007075762140448446,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday"
+    },
+    "execution": {
+      "plan": {
+        "symbol": "EURGBP.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 25,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": 0,
+          "symbol_floating_pnl": 0,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 47040.46,
+          "free_margin": 47040.46,
+          "margin_required_est": 0,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": true,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Confiance insuffisante (25 < 60) et action HOLD"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Règle 1: action HOLD et confiance < 60",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "NZDUSD.pro",
+    "timestamp": "2025-11-07T13:36:39.569567+01:00",
+    "duration_seconds": 15.275251,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "NZDUSD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "HOLD",
+        "entry": null,
+        "sl": null,
+        "tp": null,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Score=4.00 / Confluence insuffisante.",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0006904347524060519,
+        "p10": 0.00047217747954301066,
+        "p90": 0.0009835011031097275,
+        "p95": 0.0011249840910875757,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday"
+    },
+    "execution": {
+      "plan": {
+        "symbol": "NZDUSD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": -7.42,
+          "symbol_floating_pnl": 0,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 47033.04,
+          "free_margin": 45122.35,
+          "margin_required_est": 0,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": true,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Action HOLD dans le contexte technique"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Règle 1: Action HOLD avec confiance 100 mais risque élevé - pas de trade",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "AUDUSD.pro",
+    "timestamp": "2025-11-07T13:36:42.279131+01:00",
+    "duration_seconds": 16.825103,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "AUDUSD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "HOLD",
+        "entry": null,
+        "sl": null,
+        "tp": null,
+        "confidence": 25,
+        "risk_level": "high"
+      },
+      "reason": "Score=-1.00 / Confluence insuffisante.",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0006710925235406845,
+        "p10": 0.0004235161682578436,
+        "p90": 0.0010051613398674433,
+        "p95": 0.0013060470806289571,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday"
+    },
+    "execution": {
+      "plan": {
+        "symbol": "AUDUSD.pro",
+        "source": {
+          "news_bias": null,
+          "confidence": 25,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": -6.1,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 47033.04,
+          "free_margin": 45122.35,
+          "margin_required_est": 129.6,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": true,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Confiance insuffisante (25 < 60)"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Règle 1: action HOLD et confiance < 60",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "EURCAD.pro",
+    "timestamp": "2025-11-07T13:36:26.817915+01:00",
+    "status": "skipped",
+    "reason": "price_cap mid=1.63083 > 1.5"
+  },
+  {
+    "symbol": "CADCHF.pro",
+    "timestamp": "2025-11-07T13:37:01.922408+01:00",
+    "duration_seconds": 35.004759,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "CADCHF.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "SELL",
+        "entry": 0,
+        "sl": 0.57171,
+        "tp": 0.57074,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Regime=range, Score=-4.00, EMA_LTF=down, EMA_HTF=down; ATR%=0.0507; Tick=1e-05; MinStop≈0.0004; Buffer≈2e-05; Struct≈0; FibUsed=False; VolBand=NORMAL",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0005065351471309155,
+        "p10": 0.0002960128012468071,
+        "p90": 0.0007379767331889175,
+        "p95": 0.0008817269256195591,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday",
+      "levels": {
+        "entry_ref": 0.57129,
+        "sl": 0.57171,
+        "tp": 0.57074,
+        "rr": 1.3,
+        "meta": {
+          "tick": 1e-05,
+          "digits_guess": 5,
+          "atr_ltf": 0.0002893784642044207,
+          "atr_basis": 0.0002893784642044207,
+          "min_stop_price": 0.0004,
+          "spread_buffer": 2e-05,
+          "struct_floor": 0.0,
+          "sl_dist_final": 0.00042,
+          "tp_dist_final": 0.000546,
+          "rr_target": 1.3,
+          "horizon": "scalping",
+          "risk_level": "high",
+          "action": "SELL",
+          "fib_used": false,
+          "fib_tp_raw": null,
+          "anchor_tf": "ltf",
+          "eps": 5e-06
+        }
+      },
+      "position": {
+        "units": 50000.0,
+        "risk_eur": 50.0,
+        "distance": 0.00042000000000008697
+      },
+      "management": {
+        "move_be_at_R": 1.0,
+        "partial_exit_at_R": 1.8,
+        "partial_fraction": 0.5,
+        "trail_at_R": 2.2,
+        "trail_type": "ATR",
+        "trail_len": 14,
+        "time_stop_bars": 6
+      }
+    },
+    "execution": {
+      "plan": {
+        "symbol": "CADCHF.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": -7.42,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 47033.04,
+          "free_margin": 45122.35,
+          "margin_required_est": 114.2,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": true,
+          "direction_ok": true,
+          "spec_ok": true,
+          "rr": 1.3,
+          "tp_vs_spread_ratio": 13.65,
+          "hedge_ok": false
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "proceed",
+          "adjust_reason": null,
+          "cancel_reason": null
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": true,
+          "reason": "Confiance élevée, RR acceptable, marge suffisante, pas de conflit de position",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": 0.2
+          }
+        },
+        "execution_result": {
+          "ok": true,
+          "data": {
+            "stringCode": "TRADE_RETCODE_DONE",
+            "numericCode": 10009,
+            "message": "Request completed",
+            "orderId": "130399925",
+            "positionId": "130399925",
+            "tradeExecutionTime": "2025-11-07T13:37:02.310Z",
+            "tradeStartTime": "2025-11-07T12:37:01.787Z"
+          }
+        }
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "EURUSD.pro",
+    "timestamp": "2025-11-07T13:45:23.108856+01:00",
+    "duration_seconds": 22.954862,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "EURUSD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "BUY",
+        "entry": 0,
+        "sl": 1.15537,
+        "tp": 1.15653,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Regime=range, Score=4.00, EMA_LTF=up, EMA_HTF=up; ATR%=0.046; Tick=1e-05; MinStop≈0.0004; Buffer≈2e-05; Struct≈0; FibUsed=False; VolBand=NORMAL",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.00046006121834276054,
+        "p10": 0.00025953893863315023,
+        "p90": 0.0006760852520903355,
+        "p95": 0.0009000265272980027,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday",
+      "levels": {
+        "entry_ref": 1.15579,
+        "sl": 1.15537,
+        "tp": 1.15653,
+        "rr": 1.772447185161264,
+        "meta": {
+          "tick": 1e-05,
+          "digits_guess": 5,
+          "atr_ltf": 0.0005317341555483793,
+          "atr_basis": 0.0005317341555483793,
+          "min_stop_price": 0.0004,
+          "spread_buffer": 2e-05,
+          "struct_floor": 0.0,
+          "sl_dist_final": 0.00042,
+          "tp_dist_final": 0.0007444278177677309,
+          "rr_target": 1.3,
+          "horizon": "scalping",
+          "risk_level": "high",
+          "action": "BUY",
+          "fib_used": false,
+          "fib_tp_raw": null,
+          "anchor_tf": "ltf",
+          "eps": 5e-06
+        }
+      },
+      "position": {
+        "units": 50000.0,
+        "risk_eur": 50.0,
+        "distance": 0.00042000000000008697
+      },
+      "management": {
+        "move_be_at_R": 1.0,
+        "partial_exit_at_R": 1.8,
+        "partial_fraction": 0.5,
+        "trail_at_R": 2.2,
+        "trail_type": "ATR",
+        "trail_len": 14,
+        "time_stop_bars": 6
+      }
+    },
+    "execution": {
+      "plan": {
+        "symbol": "EURUSD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": -2.85,
+          "symbol_floating_pnl": 0,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 47026.96,
+          "free_margin": 45464.62,
+          "margin_required_est": 231.16,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": true,
+          "direction_ok": true,
+          "spec_ok": true,
+          "rr": 1.77,
+          "tp_vs_spread_ratio": 37.22,
+          "hedge_ok": true
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "proceed",
+          "adjust_reason": null,
+          "cancel_reason": null
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": true,
+          "reason": "Confiance élevée, RR > 1.2, volatilité normale, hedge possible avec USDCHF",
+          "hedge": {
+            "enabled": true,
+            "paired_with": "USDCHF.pro",
+            "volume": 0.08
+          }
+        },
+        "execution_result": {
+          "ok": false,
+          "error": "values_incoherent",
+          "reason": "tp_must_be_above_price_for_buy"
+        }
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "GBPUSD.pro",
+    "timestamp": "2025-11-07T13:45:23.587400+01:00",
+    "duration_seconds": 20.343666,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "GBPUSD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "BUY",
+        "entry": 0,
+        "sl": 1.312,
+        "tp": 1.31339,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Regime=range, Score=4.00, EMA_LTF=up, EMA_HTF=up; ATR%=0.0529; Tick=1e-05; MinStop≈0.0004; Buffer≈2e-05; Struct≈0; FibUsed=False; VolBand=NORMAL",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0005289121759964221,
+        "p10": 0.0002859291074243071,
+        "p90": 0.000879625564781642,
+        "p95": 0.0010961945828669064,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday",
+      "levels": {
+        "entry_ref": 1.31242,
+        "sl": 1.312,
+        "tp": 1.31339,
+        "rr": 2.313849726737414,
+        "meta": {
+          "tick": 1e-05,
+          "digits_guess": 5,
+          "atr_ltf": 0.0006941549180212242,
+          "atr_basis": 0.0006941549180212242,
+          "min_stop_price": 0.0004,
+          "spread_buffer": 2e-05,
+          "struct_floor": 0.0,
+          "sl_dist_final": 0.00042,
+          "tp_dist_final": 0.0009718168852297139,
+          "rr_target": 1.3,
+          "horizon": "scalping",
+          "risk_level": "high",
+          "action": "BUY",
+          "fib_used": false,
+          "fib_tp_raw": null,
+          "anchor_tf": "ltf",
+          "eps": 5e-06
+        }
+      },
+      "position": {
+        "units": 50000.0,
+        "risk_eur": 50.0,
+        "distance": 0.0004199999999998649
+      },
+      "management": {
+        "move_be_at_R": 1.0,
+        "partial_exit_at_R": 1.8,
+        "partial_fraction": 0.5,
+        "trail_at_R": 2.2,
+        "trail_type": "ATR",
+        "trail_len": 14,
+        "time_stop_bars": 6
+      }
+    },
+    "execution": {
+      "plan": {
+        "symbol": "GBPUSD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": -2.77,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 47026.96,
+          "free_margin": 45464.62,
+          "margin_required_est": 262.4,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": true,
+          "direction_ok": true,
+          "spec_ok": true,
+          "rr": 2.31,
+          "tp_vs_spread_ratio": 97.18,
+          "hedge_ok": false
+        },
+        "order_policy": {
+          "conflict_with_existing": "overexposed",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Exposition USD excessive (3 positions USD) en mode hedge"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Règle hedge: 3 positions USD existantes (USDCHF, USDCAD, CADCHF) dépassent la limite max_pairs=2",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "USDCHF.pro",
+    "timestamp": "2025-11-07T13:45:23.022844+01:00",
+    "duration_seconds": 16.867638,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "USDCHF.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "SELL",
+        "entry": 0,
+        "sl": 0.80648,
+        "tp": 0.80545,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Regime=range, Score=-4.00, EMA_LTF=down, EMA_HTF=down; ATR%=0.0541; Tick=1e-05; MinStop≈0.0004; Buffer≈2e-05; Struct≈0; FibUsed=False; VolBand=NORMAL",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0005411065829375022,
+        "p10": 0.000315149555578217,
+        "p90": 0.0007649480480814579,
+        "p95": 0.0009424096858171763,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday",
+      "levels": {
+        "entry_ref": 0.80606,
+        "sl": 0.80648,
+        "tp": 0.80545,
+        "rr": 1.4538812408086765,
+        "meta": {
+          "tick": 1e-05,
+          "digits_guess": 5,
+          "atr_ltf": 0.00043616437224260296,
+          "atr_basis": 0.00043616437224260296,
+          "min_stop_price": 0.0004,
+          "spread_buffer": 2e-05,
+          "struct_floor": 0.0,
+          "sl_dist_final": 0.00042,
+          "tp_dist_final": 0.0006106301211396441,
+          "rr_target": 1.3,
+          "horizon": "scalping",
+          "risk_level": "high",
+          "action": "SELL",
+          "fib_used": false,
+          "fib_tp_raw": null,
+          "anchor_tf": "ltf",
+          "eps": 5e-06
+        }
+      },
+      "position": {
+        "units": 50000.0,
+        "risk_eur": 50.0,
+        "distance": 0.00041999999999997595
+      },
+      "management": {
+        "move_be_at_R": 1.0,
+        "partial_exit_at_R": 1.8,
+        "partial_fraction": 0.5,
+        "trail_at_R": 2.2,
+        "trail_type": "ATR",
+        "trail_len": 14,
+        "time_stop_bars": 6
+      }
+    },
+    "execution": {
+      "plan": {
+        "symbol": "USDCHF.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": -2.86,
+          "symbol_floating_pnl": 0.43,
+          "symbol_net_exposure": -0.2,
+          "symbol_direction": "short"
+        },
+        "account_checks": {
+          "equity": 47026.96,
+          "free_margin": 45464.62,
+          "margin_required_est": 0,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": true,
+          "rr": 1.45,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "duplicate",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Position SELL déjà ouverte sur USDCHF.pro avec mêmes niveaux SL/TP"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Ordre annulé car position identique existe déjà",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "USDCAD.pro",
+    "timestamp": "2025-11-07T13:45:24.396682+01:00",
+    "duration_seconds": 16.302985,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "USDCAD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "SELL",
+        "entry": 0,
+        "sl": 1.41152,
+        "tp": 1.41055,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Regime=range, Score=-4.00, EMA_LTF=down, EMA_HTF=down; ATR%=0.0271; Tick=1e-05; MinStop≈0.0004; Buffer≈2e-05; Struct≈0; FibUsed=False; VolBand=NORMAL",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0002708778180176748,
+        "p10": 0.00020453534757148125,
+        "p90": 0.0005298919048176387,
+        "p95": 0.0006269114424626667,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday",
+      "levels": {
+        "entry_ref": 1.4111,
+        "sl": 1.41152,
+        "tp": 1.41055,
+        "rr": 1.3,
+        "meta": {
+          "tick": 1e-05,
+          "digits_guess": 5,
+          "atr_ltf": 0.00038223568900474093,
+          "atr_basis": 0.00038223568900474093,
+          "min_stop_price": 0.0004,
+          "spread_buffer": 2e-05,
+          "struct_floor": 0.0,
+          "sl_dist_final": 0.00042,
+          "tp_dist_final": 0.000546,
+          "rr_target": 1.3,
+          "horizon": "scalping",
+          "risk_level": "high",
+          "action": "SELL",
+          "fib_used": false,
+          "fib_tp_raw": null,
+          "anchor_tf": "ltf",
+          "eps": 5e-06
+        }
+      },
+      "position": {
+        "units": 50000.0,
+        "risk_eur": 50.0,
+        "distance": 0.00042000000000008697
+      },
+      "management": {
+        "move_be_at_R": 1.0,
+        "partial_exit_at_R": 1.8,
+        "partial_fraction": 0.5,
+        "trail_at_R": 2.2,
+        "trail_type": "ATR",
+        "trail_len": 14,
+        "time_stop_bars": 6
+      }
+    },
+    "execution": {
+      "plan": {
+        "symbol": "USDCAD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": -2.77,
+          "symbol_floating_pnl": -4.05,
+          "symbol_net_exposure": -0.2,
+          "symbol_direction": "short"
+        },
+        "account_checks": {
+          "equity": 47026.96,
+          "free_margin": 45464.62,
+          "margin_required_est": 0.0,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": true,
+          "rr": 1.3,
+          "tp_vs_spread_ratio": 13.0,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "duplicate",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Position SELL déjà ouverte sur USDCAD.pro avec mêmes niveaux SL/TP"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Ordre annulé car position identique existe déjà",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "EURCHF.pro",
+    "timestamp": "2025-11-07T13:45:23.022694+01:00",
+    "duration_seconds": 11.96882,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "EURCHF.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "HOLD",
+        "entry": null,
+        "sl": null,
+        "tp": null,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Score=-4.00 / Confluence insuffisante.",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.00035525444488978137,
+        "p10": 0.00020147951754768446,
+        "p90": 0.0005024140030817236,
+        "p95": 0.0005410258444850328,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday"
+    },
+    "execution": {
+      "plan": {
+        "symbol": "EURCHF.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": -2.77,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 47026.96,
+          "free_margin": 45464.62,
+          "margin_required_est": 186.2,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": true,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Action HOLD avec confiance 100% mais risque élevé - pas de signal d'entrée"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Règle 1: Action HOLD avec confiance 100% mais pas de niveaux d'entrée/SL/TP définis",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "EURGBP.pro",
+    "timestamp": "2025-11-07T13:45:20.112663+01:00",
+    "duration_seconds": 8.964782,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "EURGBP.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "HOLD",
+        "entry": null,
+        "sl": null,
+        "tp": null,
+        "confidence": 25,
+        "risk_level": "high"
+      },
+      "reason": "Score=-1.00 / Confluence insuffisante.",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.00041456817083975015,
+        "p10": 0.00021329884890987558,
+        "p90": 0.0006387406641627705,
+        "p95": 0.0007075762140448446,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday"
+    },
+    "execution": {
+      "plan": {
+        "symbol": "EURGBP.pro",
+        "source": {
+          "news_bias": null,
+          "confidence": 25,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": null,
+          "symbol_floating_pnl": null,
+          "symbol_net_exposure": null,
+          "symbol_direction": null
+        },
+        "account_checks": {
+          "equity": null,
+          "free_margin": null,
+          "margin_required_est": null,
+          "margin_ok": false,
+          "margin_reason": "Information non disponible"
+        },
+        "tools_used": {
+          "get_account_info": false,
+          "get_positions": false,
+          "get_orders": false,
+          "get_symbol_spec": false,
+          "get_current_price": false
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": false,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Confiance insuffisante (25 < 60) et action HOLD"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Règle 1: HOLD/confiance insuffisante - confidence=25 < min_confidence=60",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "NZDUSD.pro",
+    "timestamp": "2025-11-07T13:45:41.223734+01:00",
+    "duration_seconds": 14.705623,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "NZDUSD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "HOLD",
+        "entry": null,
+        "sl": null,
+        "tp": null,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Score=4.00 / Confluence insuffisante.",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0006904347524060519,
+        "p10": 0.00047217747954301066,
+        "p90": 0.0009835011031097275,
+        "p95": 0.0011249840910875757,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday"
+    },
+    "execution": {
+      "plan": {
+        "symbol": "NZDUSD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": -2.85,
+          "symbol_floating_pnl": 0,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 47026.88,
+          "free_margin": 45464.54,
+          "margin_required_est": 0.1,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": true,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Action HOLD avec confiance 100% mais honor_hold=False - pas de signal d'entrée"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Règle 1: action HOLD détectée - pas d'ordre à envoyer",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "AUDUSD.pro",
+    "timestamp": "2025-11-07T13:45:43.099666+01:00",
+    "duration_seconds": 14.078915,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "AUDUSD.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "HOLD",
+        "entry": null,
+        "sl": null,
+        "tp": null,
+        "confidence": 25,
+        "risk_level": "high"
+      },
+      "reason": "Score=-1.00 / Confluence insuffisante.",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0006710925235406845,
+        "p10": 0.0004235161682578436,
+        "p90": 0.0010051613398674433,
+        "p95": 0.0013060470806289571,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday"
+    },
+    "execution": {
+      "plan": {
+        "symbol": "AUDUSD.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 25,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": -3.07,
+          "symbol_floating_pnl": 0,
+          "symbol_net_exposure": 0,
+          "symbol_direction": "flat"
+        },
+        "account_checks": {
+          "equity": 47026.66,
+          "free_margin": 45464.32,
+          "margin_required_est": 129.6,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": false,
+          "direction_ok": false,
+          "spec_ok": true,
+          "rr": null,
+          "tp_vs_spread_ratio": null,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "none",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Confiance insuffisante (25 < 60) et action HOLD"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Confidence < min_confidence (25 < 60) et action HOLD",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  },
+  {
+    "symbol": "EURCAD.pro",
+    "timestamp": "2025-11-07T13:45:29.094993+01:00",
+    "status": "skipped",
+    "reason": "price_cap mid=1.631055 > 1.5"
+  },
+  {
+    "symbol": "CADCHF.pro",
+    "timestamp": "2025-11-07T13:45:44.682208+01:00",
+    "duration_seconds": 15.498697,
+    "technical_decision": {
+      "ok": true,
+      "symbol": "CADCHF.pro",
+      "horizon": "scalping",
+      "decision": {
+        "action": "SELL",
+        "entry": 0,
+        "sl": 0.57171,
+        "tp": 0.57074,
+        "confidence": 100,
+        "risk_level": "high"
+      },
+      "reason": "Regime=range, Score=-4.00, EMA_LTF=down, EMA_HTF=down; ATR%=0.0507; Tick=1e-05; MinStop≈0.0004; Buffer≈2e-05; Struct≈0; FibUsed=False; VolBand=NORMAL",
+      "regime": "range",
+      "volatility": {
+        "atr_pct_now": 0.0005065351471309155,
+        "p10": 0.0002960128012468071,
+        "p90": 0.0007379767331889175,
+        "p95": 0.0008817269256195591,
+        "band": "NORMAL",
+        "size_factor": 1.0,
+        "reason": "ATR_OK"
+      },
+      "source": "direct_intraday",
+      "levels": {
+        "entry_ref": 0.57129,
+        "sl": 0.57171,
+        "tp": 0.57074,
+        "rr": 1.3,
+        "meta": {
+          "tick": 1e-05,
+          "digits_guess": 5,
+          "atr_ltf": 0.0002893784642044207,
+          "atr_basis": 0.0002893784642044207,
+          "min_stop_price": 0.0004,
+          "spread_buffer": 2e-05,
+          "struct_floor": 0.0,
+          "sl_dist_final": 0.00042,
+          "tp_dist_final": 0.000546,
+          "rr_target": 1.3,
+          "horizon": "scalping",
+          "risk_level": "high",
+          "action": "SELL",
+          "fib_used": false,
+          "fib_tp_raw": null,
+          "anchor_tf": "ltf",
+          "eps": 5e-06
+        }
+      },
+      "position": {
+        "units": 50000.0,
+        "risk_eur": 50.0,
+        "distance": 0.00042000000000008697
+      },
+      "management": {
+        "move_be_at_R": 1.0,
+        "partial_exit_at_R": 1.8,
+        "partial_fraction": 0.5,
+        "trail_at_R": 2.2,
+        "trail_type": "ATR",
+        "trail_len": 14,
+        "time_stop_bars": 6
+      }
+    },
+    "execution": {
+      "plan": {
+        "symbol": "CADCHF.pro",
+        "source": {
+          "news_bias": "neutral",
+          "confidence": 100,
+          "risk_level": "high"
+        },
+        "portfolio": {
+          "floating_pnl_total": -3.07,
+          "symbol_floating_pnl": 0.64,
+          "symbol_net_exposure": -0.2,
+          "symbol_direction": "short"
+        },
+        "account_checks": {
+          "equity": 47026.66,
+          "free_margin": 45464.32,
+          "margin_required_est": 0,
+          "margin_ok": true,
+          "margin_reason": "Marge suffisante"
+        },
+        "tools_used": {
+          "get_account_info": true,
+          "get_positions": true,
+          "get_orders": true,
+          "get_symbol_spec": true,
+          "get_current_price": true
+        },
+        "checks": {
+          "values_ok": true,
+          "direction_ok": false,
+          "spec_ok": true,
+          "rr": 1.3,
+          "tp_vs_spread_ratio": 13.65,
+          "hedge_ok": null
+        },
+        "order_policy": {
+          "conflict_with_existing": "duplicate",
+          "action": "cancel",
+          "adjust_reason": null,
+          "cancel_reason": "Position déjà ouverte sur le même symbole dans la même direction"
+        },
+        "normalized_order": null,
+        "decision": {
+          "send_order": false,
+          "reason": "Position SELL déjà existante sur CADCHF.pro - duplication détectée",
+          "hedge": {
+            "enabled": false,
+            "paired_with": null,
+            "volume": null
+          }
+        },
+        "execution_result": null
+      },
+      "dry_run": false
+    },
+    "status": "success"
+  }
+]

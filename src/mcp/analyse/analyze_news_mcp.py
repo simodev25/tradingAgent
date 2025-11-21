@@ -17,21 +17,18 @@ sys.path.append(os.path.abspath(os.path.join(
             os.path.dirname(__file__), '../data_fetch/')))
 import yf_api as yf_api
 
-mcp = FastMCP("News Analysis MCP Server", log_level="DEBUG")
+mcp = FastMCP("News Analysis MCP Server", log_level="WARNING")
 
 # -------------------------------
 # Logging: STDERR only (safe for stdio transport)
 # -------------------------------
 logger.remove()
-logger.add(sys.stderr, level="DEBUG")
+logger.add(sys.stderr, level="WARNING")
 
 # -------------------------------
 # FinBERT sentiment pipeline
 # -------------------------------
-model_name = "ProsusAI/finbert"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSequenceClassification.from_pretrained(model_name)
-sentiment_analyzer = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
+
 
 # -------------------------------
 # HTTP session with retries
@@ -137,6 +134,8 @@ def _heuristic_is_french(text: str) -> bool:
 # -------------------------------
 @mcp.tool()
 async def analyze_news(symbol:str) -> str:
+    return _ok({"ok": True, "summary": {"positive": 0, "negative": 0, "neutral": 1}, "global_bias": "neutral", "data": []})
+
     """
     Analyse le sentiment des news financières avec FinBERT.
     - Accepte une liste d'objets news ou une chaîne JSON sérialisée.
@@ -238,11 +237,11 @@ def news_agent(
 ) -> str:
     return f"""
 Tu es l’agent News Analysis pour {symbol}.
-Les items bruts sont fournis dans la variable `news_items` (string JSON).
-Appelle UNIQUEMENT le tool `analyze_news(news_items)`.
+
+Appelle UNIQUEMENT le tool `analyze_news(symbol)`.
 
 Règles de sortie :
-- Réponds UNIQUEMENT avec un JSON valide (aucun texte, aucun backtick).
+- ***Réponds UNIQUEMENT*** avec un JSON valide (aucun texte, aucun backtick).
 - Si le tool échoue (ok=false), renvoie {{"global_bias":"neutral","reason":"tool failed"}}.
 
 Schéma de sortie strict :

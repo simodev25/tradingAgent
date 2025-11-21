@@ -7,17 +7,19 @@ import yfinance as yf
 from typing import Annotated
 from mcp.server.fastmcp import FastMCP
 import math, re
-
-
+from loguru import logger
+import sys
 # --- Config ---
 load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN")
 ACCOUNT_ID = os.getenv("ACCOUNT_ID")
-
+ACCOUNT_ID_REVERSE_TRADE = os.getenv("ACCOUNT_ID_REVERSE_TRADE")
 BASE_URL = "https://mt-client-api-v1.london.agiliumtrade.ai"
 BASE_MARKET_URL = "https://mt-market-data-client-api-v1.london.agiliumtrade.ai"
 HEADERS = {"auth-token": API_TOKEN, "Accept": "application/json"}
 
+logger.remove()
+logger.add(sys.stdout, level="INFO", enqueue=True, backtrace=True, diagnose=False)
 # =========================
 # HELPERS
 # =========================
@@ -29,6 +31,12 @@ def _request(method: str, url: str, *, params=None):
         return {"ok": True, "data": resp.json()}
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+def _strip_none(d: dict) -> dict:
+    """Retourne une copie sans clés dont la valeur est None."""
+    if not isinstance(d, dict):
+        return d
+    return {k: v for k, v in d.items() if v is not None}
 
 # <-- ajout: POST helper utilisé par trade_execute
 def _post_json(url: str, payload: dict, *, timeout: int = 20, headers: dict | None = None):
@@ -275,21 +283,76 @@ def _map_action_string(action: str) -> str:
         "SELL_STOP_LIMIT": "ORDER_TYPE_SELL_STOP_LIMIT",
     }
     return mapping.get(a, a)
+_REVERSE_ACTION = {
+    "ORDER_TYPE_BUY": "ORDER_TYPE_SELL",
+    "ORDER_TYPE_SELL": "ORDER_TYPE_BUY",
+    "ORDER_TYPE_BUY_LIMIT": "ORDER_TYPE_SELL_LIMIT",
+    "ORDER_TYPE_SELL_LIMIT": "ORDER_TYPE_BUY_LIMIT",
+    "ORDER_TYPE_BUY_STOP": "ORDER_TYPE_SELL_STOP",
+    "ORDER_TYPE_SELL_STOP": "ORDER_TYPE_BUY_STOP",
+    "ORDER_TYPE_BUY_STOP_LIMIT": "ORDER_TYPE_SELL_STOP_LIMIT",
+    "ORDER_TYPE_SELL_STOP_LIMIT": "ORDER_TYPE_BUY_STOP_LIMIT",
+}
 
+def _invert_trade_dict_if_needed(trade: dict) -> dict:
+    """
+    Si REVERSE_TRADE, inverse l'action et (par défaut) échange SL/TP.
+    Conserve openPrice tel quel.
+    Retourne (payload, reversed_applied)
+    """
+    REVERSE_TRADE = (os.getenv("REVERSE_TRADE", "false").strip().lower() in {"1","true","yes","on"})
+    if not REVERSE_TRADE:
+        return trade, False
+
+    t = dict(trade)
+    action = (t.get("actionType") or "").upper()
+    # Ne pas inverser SL/TP pour les actions de modification/fermeture
+    if action in {
+        "POSITION_MODIFY",
+        "ORDER_MODIFY",
+        "POSITION_PARTIAL",
+        "POSITION_CLOSE_ID",
+        "POSITIONS_CLOSE_SYMBOL",
+        "ORDER_CANCEL",
+        "POSITION_CLOSE_BY",
+    }:
+        return t, False
+    reversed_applied = False
+
+    if action in _REVERSE_ACTION:
+        t["actionType"] = _REVERSE_ACTION[action]
+        reversed_applied = True
+
+    # Politique simple : si SL/TP existent, on les échange (uniquement si action d'ouverture).
+    # (utile pour rester “symétrique” quand on passe de BUY à SELL et vice versa en prix absolus)
+    if "stopLoss" in t or "takeProfit" in t:
+        sl = t.get("stopLoss")
+        tp = t.get("takeProfit")
+        t["stopLoss"], t["takeProfit"] = tp, sl
+
+    return t
 def trade_execute(trade: dict, *, client_id: str | None = None, dry_run: bool = False) -> str:
-    """
-    POST officiel /users/current/accounts/{accountId}/trade
-    - `trade`: dict MetaTraderTrade (actionType, symbol, volume, openPrice, stopLoss, takeProfit, etc.)
-    - `client_id`: optionnel pour idempotence (sinon auto)
-    - `dry_run`: ne poste pas, renvoie l’URL et le payload
-    """
+    REVERSE_TRADE = (os.getenv("REVERSE_TRADE", "false").strip().lower() in {"1","true","yes","on"})
+    # Choix du compte d’exécution
+    if REVERSE_TRADE:
+        url_inverted = f"{BASE_URL}/users/current/accounts/{ACCOUNT_ID_REVERSE_TRADE}/trade"
+        payload = dict(trade)
+        payload = _strip_none(payload)
+        logger.info(f"payload info: {payload}")
+        payload_inverted = _invert_trade_dict_if_needed(trade)
+        payload_inverted = _strip_none(payload_inverted)
+        logger.info(f"payload_inverted: {payload_inverted}")
+        res_inverted = _post_json(url_inverted, payload_inverted)  # inverted account
+        logger.info(f"res_inverted: {res_inverted}")
+
     url = f"{BASE_URL}/users/current/accounts/{ACCOUNT_ID}/trade"
     payload = dict(trade)
+    payload = _strip_none(payload)
     
     if dry_run:
         return json.dumps({"ok": True, "dry_run": True, "url": url, "payload": payload}, ensure_ascii=False)
 
-    res = _post_json(url, payload)  # <-- maintenant défini
+    res = _post_json(url, payload)
     return json.dumps(res, ensure_ascii=False)
 
 # Wrappers pratiques (retour str(JSON))
@@ -372,13 +435,21 @@ def position_modify(position_id: str, *,
                     trailing_stop_loss: dict | None = None,
                     comment: str | None = None, client_id: str | None = None) -> str:
     trade = {
-        "actionType": "POSITION_MODIFY", "positionId": position_id,
-        "stopLoss": sl, "takeProfit": tp,
-        "stopLossUnits": sl_units, "takeProfitUnits": tp_units,
+        "actionType": "POSITION_MODIFY",
+        "positionId": position_id,
         "stopPriceBase": stop_price_base,
-        "trailingStopLoss": trailing_stop_loss,
-        "comment": comment,
     }
+    # N'ajouter SL/TP que si fournis; associer Units seulement si la valeur correspondante existe
+    if sl is not None:
+        trade["stopLoss"] = sl
+        trade["stopLossUnits"] = sl_units
+    if tp is not None:
+        trade["takeProfit"] = tp
+        trade["takeProfitUnits"] = tp_units
+    if trailing_stop_loss is not None:
+        trade["trailingStopLoss"] = trailing_stop_loss
+    if comment is not None:
+        trade["comment"] = comment
     return trade_execute(trade, client_id=client_id)
 
 def position_partial(position_id: str, volume: float, *,

@@ -38,11 +38,12 @@ Daily results are persisted as `results_YYYYMMDD.json`.
 - [MCP Modules](#mcp-modules)
   - [News](#news-srcmcpanalyseanalyze_news_mcppy)
   - [Technical Analysis](#technical-analysis-srcmcpanalyseanalyze_tec_mcppy)
-  - [Execution](#execution-srcmcpexecutionexecution_mcppy)
+- [Execution](#execution-srcmcpexecutionexecution_mcppy)
 - [Outputs & Monitoring](#outputs--monitoring)
 - [Troubleshooting](#troubleshooting)
 - [Notes](#notes)
 - [License](#license)
+- [Backtesting](#backtesting)
 
 ---
 
@@ -249,6 +250,38 @@ python src/agents.py
 
 - LangChain and related deps evolve quickly. Pin compatible versions in `requirements.txt`.
 - MCP outputs are strict JSON. The parser handles code-fence blocks and bracket balancing with conservative fallbacks.
+
+---
+
+## Backtesting
+
+- Utilisez `src/backtest/engine.py` pour rejouer la stratégie sur des données historiques **déterministes** (sans appel MCP).
+- Préparez un CSV par symbole incluant les colonnes `Date,Open,High,Low,Close[,Volume]` (horodatage ISO ou epoch) sur le timeframe natif du run (ex: 15 minutes).
+- Exemple rapide :
+
+```bash
+python -m src.backtest.engine \
+  --symbol BTCUSD \
+  --data data/BTCUSD_15m.csv \
+  --interval 15m \
+  --horizon scalping \
+  --risk-level high \
+  --cost-bps 7.0 \
+  --slippage-bps 1.5 \
+  --warmup 240 \
+  --max-hold 32 \
+  --initial-equity 100000 \
+  --risk-allocation 0.5
+```
+
+- Le moteur applique :
+  - calculs indicateurs identiques à la brique technique (`analysis_core`) ;
+  - gating de volatilité, régime et confiance ;
+  - génération d’un plan (entry/sl/tp) via `plan_raw_from_json` ;
+  - simulation barre par barre avec slip + coûts (`cost_bps`) et limite de maintien (`max-hold`) ;
+  - métriques de performance (CAGR, Sharpe, drawdown) et test t (p-value) pour valider l’edge.
+- Les résultats sont imprimés dans la console et peuvent être consommés via `Backtester(...).run().to_dict()` pour intégrer votre propre reporting.
+- **Note** : fournissez vos propres historiques (MetaApi export, broker, etc.). Aucun téléchargement réseau n’est effectué par défaut.
 
 ---
 

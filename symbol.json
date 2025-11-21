@@ -1753,3 +1753,33 @@
       "USDZAR"
     ]
   }
+
+  { "symbol": "EURUSD.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.10, "min_confidence": 70 },
+  { "symbol": "GBPUSD.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.08, "min_confidence": 70 },
+  { "symbol": "USDJPY.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.10, "min_confidence": 70 },
+  { "symbol": "USDCAD.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.10, "min_confidence": 70 },
+  { "symbol": "USDCHF.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.10, "min_confidence": 70 },
+  { "symbol": "AUDUSD.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.10, "min_confidence": 70 },
+  { "symbol": "NZDUSD.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.08, "min_confidence": 70 },
+  { "symbol": "EURGBP.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.12, "min_confidence": 70 },
+  { "symbol": "EURJPY.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.08, "min_confidence": 70 },
+{ "symbol": "GBPJPY.pro", "period": "5d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.06, "min_confidence": 70 }
+
+  { "symbol": "EURJPY.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.08, "min_confidence": 64 },
+  { "symbol": "GBPJPY.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.06, "min_confidence": 68 },
+  { "symbol": "AUDJPY.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.08, "min_confidence": 64 },
+  { "symbol": "CADJPY.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.08, "min_confidence": 64 },
+  { "symbol": "CHFJPY.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.08, "min_confidence": 64 },
+
+  { "symbol": "EURCAD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.08, "min_confidence": 65 },
+  { "symbol": "EURAUD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.08, "min_confidence": 65 },
+  { "symbol": "AUDCAD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.08, "min_confidence": 65 },
+  { "symbol": "AUDCHF.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.08, "min_confidence": 65 },
+  { "symbol": "CADCHF.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.08, "min_confidence": 65 },
+  { "symbol": "GBPCHF.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.06, "min_confidence": 68 },
+
+  { "symbol": "EURNZD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.06, "min_confidence": 68 },
+  { "symbol": "NZDJPY.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.06, "min_confidence": 66 },
+  { "symbol": "GBPAUD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.06, "min_confidence": 68 },
+  { "symbol": "GBPCAD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.06, "min_confidence": 68 },
+  { "symbol": "GBPNZD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.05, "min_confidence": 70 }
