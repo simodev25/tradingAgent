@@ -278,7 +278,7 @@ class Backtester:
                 "volatility": vol_meta,
             }
 
-        score = _directional_score(last_ltf)
+        score = _directional_score(last_ltf, df_context=ltf)
         confidence = _confidence(last_ltf, score)
 
         ltf_up = (last_ltf.get("EMA_Fast") or 0) >= (last_ltf.get("EMA_Slow") or 0)
@@ -556,4 +556,3 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(main())
-

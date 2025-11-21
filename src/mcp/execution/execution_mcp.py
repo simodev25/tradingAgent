@@ -136,7 +136,7 @@ $CTX
 Tools utilisables : get_account_info, get_positions, get_orders, get_symbol_spec, get_current_price, execute_trade(symbol, action, entry, sl, tp, volume, comment, client_id, dry_run=$DRY_RUN).
 
 Style d'ordres (important) :
-- Scalping (15m/5m) ⇒ privilégie les ordres au marché (BUY/SELL). N'utilise pas LIMIT/STOP sauf justification claire (ex: gap/spread extrême). Ajuste le volume selon la volatilité.
+- Scalping (15m/5m) ⇒ privilégie les ordres au marché (BUY/SELL). Autorise LIMIT/STOP si l'écart entrée/prix ou le spread le justifie; documente la justification. Ajuste le volume selon la volatilité.
 
 Procédure d'exécution (OBLIGATOIRE) :
 - Si tu décides `decision.send_order = true` :
@@ -147,7 +147,7 @@ Procédure d'exécution (OBLIGATOIRE) :
 
 Règles obligatoires :
 1. HOLD/confiance/no-trade : si action == "HOLD" ou confidence < $MIN_CONFIDENCE ou regime == "no-trade" ⇒ annuler.
-2. Spread edge : récupère bid/ask; sans quote ⇒ annuler. entry_ref = ask (BUY) ou bid (SELL). tp_dist = distance TP. Exige tp_dist > 0. En scalping: band HIGH ⇒ ≥ 5×spread, sinon ≥ 3×spread. Hors scalping: HIGH ⇒ ≥ 6×spread, sinon ≥ 4×spread.
+2. Spread edge : récupère bid/ask; sans quote ⇒ annuler. entry_ref = ask (BUY) ou bid (SELL). tp_dist = distance TP. Exige tp_dist > 0. En scalping: band HIGH ⇒ ≥ 5×spread, sinon ≥ 2×spread. Hors scalping: HIGH ⇒ ≥ 6×spread, sinon ≥ 4×spread.
 3. RR min : RR ≥ 1.2. Tu peux pousser TP (≤ 5×spread) pour atteindre 1.2 ensuite.
 4. Specs : respecte tick/digits/stopsLevel. Si incohérence SL/TP ⇒ annuler.
 5. Marges : vérifie freeMargin; si inconnue ou insuffisante ⇒ annuler.

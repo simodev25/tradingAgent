@@ -853,7 +853,7 @@ def intraday_decision(symbol: str, interval: str = "15m", equity: float = 10000.
                 "decision": {"action": "HOLD", "entry": None, "sl": None, "tp": None, "confidence": 0, "risk_level": risk_level},
                 "reason": "Régime no-trade", "volatility": vol_meta,
             })
-        score = _directional_score(last_ltf)
+        score = _directional_score(last_ltf, df_context=ltf)
         conf = _confidence(last_ltf, score)
         ltf_up = (last_ltf.get("EMA_Fast") or 0) >= (last_ltf.get("EMA_Slow") or 0)
         htf_up = (last_htf.get("EMA_Fast") or 0) >= (last_htf.get("EMA_Slow") or 0)
@@ -893,6 +893,23 @@ def intraday_decision(symbol: str, interval: str = "15m", equity: float = 10000.
                     "reason": f"Early-bar block: {secs_in_bar}s into {step_min}m bar",
                     "volatility": vol_meta,
                 })
+
+        # MTF entry assist: if 15m trend but decision HOLD, use 5m score to trigger entries
+        reason_hint = ""
+        if regime == "trend" and action == "HOLD" and inter in {"15m", "5m"}:
+            try:
+                params_ind = _resolve_indicator_params()
+                ck5 = _ensure_cached_ohlcv(symbol, f"{CONFIG['LTF_PERIOD_5M']}d", "5m")
+                df5 = _df_from_cache(ck5, params_ind)
+                if df5 is not None and not df5.empty:
+                    last5 = _last_row(df5)
+                    score5 = _directional_score(last5, df_context=df5)
+                    if ltf_up and htf_up and score5 >= 1.5:
+                        action = "BUY"; reason_hint = " | Signal M5 (Trend M15/HTF confirmé)"
+                    elif (not ltf_up) and (not htf_up) and score5 <= -1.5:
+                        action = "SELL"; reason_hint = " | Signal M5 (Trend M15/HTF confirmé)"
+            except Exception:
+                pass
         min_conf = CONFIG["PROFILES"].get(horizon, {}).get("min_confidence", None)
         if action != "HOLD" and isinstance(min_conf, (int, float)) and conf < float(min_conf):
             action = "HOLD"
@@ -1087,7 +1104,7 @@ def intraday_decision(symbol: str, interval: str = "15m", equity: float = 10000.
             f"Buffer≈{round(lv['meta'].get('spread_buffer') or 0, 6)}; "
             f"Struct≈{round(lv['meta'].get('struct_floor') or 0, 6)}; FibUsed={lv['meta'].get('fib_used')}; "
             f"VolBand={(vol_meta or {}).get('band', 'NA')}"
-        )
+        ) + reason_hint
         return _ok({
             "symbol": symbol, "interval": inter, "regime": regime,
             "decision": {"action": action, "entry": entry, "sl": sl, "tp": tp, "confidence": conf, "risk_level": risk_level},

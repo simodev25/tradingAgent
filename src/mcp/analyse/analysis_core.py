@@ -472,14 +472,65 @@ def _volatility_gate(atr_now: float, p10: float, p90: float, p95: Optional[float
         return False, band, cls["size_factor"], cls["reason"]
     return True, band, cls["size_factor"], cls["reason"]
 
-def _directional_score(last: Dict[str, Any]) -> float:
+def _detect_pullback_setup(df: pd.DataFrame, trend_direction: str) -> bool:
+    """Détecte une configuration simple de rebond (pullback) vers EMA_Slow.
+
+    UP: prix au-dessus EMA_Slow, bougie précédente (ou actuelle) teste EMA_Slow, bougie actuelle verte.
+    DOWN: prix sous EMA_Slow, bougie précédente (ou actuelle) teste EMA_Slow par le bas, bougie actuelle rouge.
+    """
+    try:
+        if df is None or len(df) < 3:
+            return False
+        last = df.iloc[-1]
+        prev = df.iloc[-2]
+        ema_ref = last.get("EMA_Slow")
+        if ema_ref is None or not np.isfinite(ema_ref):
+            return False
+        if trend_direction == "UP":
+            if float(last.get("Close") or 0) < float(ema_ref):
+                return False
+            tested_zone = (float(prev.get("Low") or np.inf) <= float(ema_ref) * 1.001) or (
+                float(last.get("Low") or np.inf) <= float(ema_ref) * 1.001
+            )
+            is_green = (float(last.get("Close") or 0) > float(last.get("Open") or 0))
+            return bool(tested_zone and is_green)
+        if trend_direction == "DOWN":
+            if float(last.get("Close") or 0) > float(ema_ref):
+                return False
+            tested_zone = (float(prev.get("High") or -np.inf) >= float(ema_ref) * 0.999) or (
+                float(last.get("High") or -np.inf) >= float(ema_ref) * 0.999
+            )
+            is_red = (float(last.get("Close") or 0) < float(last.get("Open") or 0))
+            return bool(tested_zone and is_red)
+        return False
+    except Exception:
+        return False
+
+
+def _directional_score(last: Dict[str, Any], df_context: Optional[pd.DataFrame] = None) -> float:
     s = 0.0
-    s += CONFIG["SCORE_W_EMA"]   if (last.get("EMA_Fast") or 0) >= (last.get("EMA_Slow") or 0) else -CONFIG["SCORE_W_EMA"]
-    s += CONFIG["SCORE_W_MACD"]  if (last.get("MACD_Line") or 0) >= (last.get("MACD_Signal") or 0) else -CONFIG["SCORE_W_MACD"]
+    ema_fast = last.get("EMA_Fast") or 0
+    ema_slow = last.get("EMA_Slow") or 0
+    trend_up = ema_fast >= ema_slow
+    trend_down = not trend_up
+    s += CONFIG["SCORE_W_EMA"] if trend_up else -CONFIG["SCORE_W_EMA"]
+    s += CONFIG["SCORE_W_MACD"] if (last.get("MACD_Line") or 0) >= (last.get("MACD_Signal") or 0) else -CONFIG["SCORE_W_MACD"]
     rsi_v = last.get("RSI") or 50
-    if rsi_v >= CONFIG["DEC_RSI_POS"]: s += CONFIG["SCORE_W_RSI"]
-    elif rsi_v <= CONFIG["DEC_RSI_NEG"]: s -= CONFIG["SCORE_W_RSI"]
+    if rsi_v >= CONFIG["DEC_RSI_POS"]:
+        s += CONFIG["SCORE_W_RSI"]
+    elif rsi_v <= CONFIG["DEC_RSI_NEG"]:
+        s -= CONFIG["SCORE_W_RSI"]
     s += CONFIG["SCORE_W_BBPOS"] if (last.get("Close") or 0) >= (last.get("BB_Mid") or 0) else -CONFIG["SCORE_W_BBPOS"]
+
+    # Bonus pullback si contexte fourni
+    if df_context is not None and isinstance(df_context, pd.DataFrame) and not df_context.empty:
+        try:
+            if trend_up and rsi_v > 40 and _detect_pullback_setup(df_context, "UP"):
+                s += 2.0
+            if trend_down and rsi_v < 60 and _detect_pullback_setup(df_context, "DOWN"):
+                s -= 2.0
+        except Exception:
+            pass
     return float(s)
 
 def _confidence(last: Dict[str, Any], score_total: float) -> int:
@@ -519,5 +570,5 @@ __all__ = [
     "_infer_digits_from_prices","_infer_tick_from_prices",
     "_zigzag_swings","_fib_levels",
     "_atr_pct_bands_from_df","_classify_vol_band","_volatility_gate",
-    "_directional_score","_confidence","_regime_from_df","_position_size",
+    "_directional_score","_detect_pullback_setup","_confidence","_regime_from_df","_position_size",
 ]

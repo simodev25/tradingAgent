@@ -1,16 +1,16 @@
 {
   
   "symbols": [
-    { "symbol": "EURUSD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
-    { "symbol": "GBPUSD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
-    { "symbol": "USDCHF.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
-    { "symbol": "USDCAD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
-    { "symbol": "EURCHF.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
-    { "symbol": "EURGBP.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
-    { "symbol": "NZDUSD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.1, "min_confidence": 60 },
-    { "symbol": "AUDUSD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
-    { "symbol": "EURCAD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 },
-    { "symbol": "CADCHF.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 60 }
+    { "symbol": "EURUSD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 50 },
+    { "symbol": "GBPUSD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 50 },
+    { "symbol": "USDCHF.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 50 },
+    { "symbol": "USDCAD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 50 },
+    { "symbol": "EURCHF.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 50 },
+    { "symbol": "EURGBP.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 50 },
+    { "symbol": "NZDUSD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.1, "min_confidence": 50 },
+    { "symbol": "AUDUSD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 50 },
+    { "symbol": "EURCAD.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 50 },
+    { "symbol": "CADCHF.pro", "period": "2d", "interval": "15m", "horizon": "scalping", "risk_level": "high", "default_volume": 0.2, "min_confidence": 50 }
   ]
 ,
   "global_settings": {
@@ -20,7 +20,7 @@
     "include_columns": "Open,High,Low,Close,Volume",
     "max_concurrent_symbols": 6,
     "price_cap_enabled": true,
-    "price_cap_max": 1.5,
+    "price_cap_max": 2.0,
     "retry_attempts": 3,
     "retry_delay": 5
   },
@@ -30,7 +30,7 @@
     "cron_trigger":"*/15",
     "interval_minutes": 15,
     "start_time": "08:00",
-    "end_time": "18:00",
+    "end_time": "19:00",
     "timezone": "Europe/Paris"
   },
   "logging": {

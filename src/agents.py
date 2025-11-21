@@ -293,6 +293,26 @@ def _direct_intraday_analysis(symbol: str, interval: str, horizon: str, risk_lev
                         data = data2
             except Exception as _:
                 pass
+        # If still HOLD after 5m fallback, try 1m as a last resort
+        if decision["action"].upper() == "HOLD" and interval.lower() in ("15m", "5m"):
+            try:
+                raw3 = callable_tool(symbol=symbol, interval="1m", risk_level=risk_level)
+                payload3 = json.loads(raw3)
+                if isinstance(payload3, dict) and payload3.get("ok"):
+                    data3 = payload3.get("data") or {}
+                    decision3 = (data3.get("decision") or {})
+                    if str(decision3.get("action", "HOLD")).upper() != "HOLD":
+                        decision = {
+                            "action": decision3.get("action"),
+                            "entry": decision3.get("entry"),
+                            "sl": decision3.get("sl"),
+                            "tp": decision3.get("tp"),
+                            "confidence": decision3.get("confidence", 0),
+                            "risk_level": decision3.get("risk_level", risk_level),
+                        }
+                        data = data3
+            except Exception as _:
+                pass
         result = {
             "ok": True,
             "symbol": symbol,
